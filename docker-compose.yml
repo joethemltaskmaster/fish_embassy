@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rao}
+      POSTGRES_USER: ${POSTGRES_USER:-rao}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rao}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rao} -d ${POSTGRES_DB:-rao}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # overrides .env's POSTGRES_HOST — inside compose, db is the hostname
+      POSTGRES_HOST: db
+
+volumes:
+  pgdata:
