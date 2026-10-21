@@ -85,6 +85,10 @@ class Batch(models.Model):
         return (f"Batch {self.pk} {self.sku.code} exp {self.expiry_date} "
                 f"({self.remaining_qty}/{self.received_qty})")
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class StockMovement(models.Model):
     """
@@ -132,3 +136,5 @@ class StockMovement(models.Model):
     def __str__(self):
         sign = "+" if self.qty >= Decimal("0") else ""
         return f"{self.movement_type} {sign}{self.qty} {self.sku.code} @ {self.occurred_at:%Y-%m-%d %H:%M}"
+
+

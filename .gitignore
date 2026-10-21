@@ -8,5 +8,6 @@ staticfiles/
 .DS_Store
 config/settings/
 tests
+inventory/management/commands/seed.py
 
 
