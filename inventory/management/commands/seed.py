@@ -8,7 +8,9 @@ from costing.models import SKUBalance
 from inventory.models import Location, Product, SKU
 from purchasing.models import Supplier
 from purchasing.services import receive_stock
+from sales.models import Customer
 
+# ...inside handle, after supplier:
 
 class Command(BaseCommand):
     help = "Seed sample data: Supplier A, Frozen Chicken 20 kg SKU, Location MAIN, opening 100 cartons @ ₦21,000."
@@ -23,7 +25,7 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         product, _ = Product.objects.get_or_create(
             name="Frozen Fish",
-            defaults={"description": "Bulk frozen chicken cartons"},
+            defaults={"description": "Bulk frozen fish cartons"},
         )
         sku, _ = SKU.objects.get_or_create(
             code="FISH-20KG",
@@ -40,6 +42,9 @@ class Command(BaseCommand):
         supplier, _ = Supplier.objects.get_or_create(
             name="Supplier A", defaults={"phone": "+234 800 000 0000"},
         )
+
+        customer, _ = Customer.objects.get_or_create(name="Customer 1")
+        self.stdout.write(f"customer={customer.pk}")
 
         self.stdout.write(
             f"catalog: product={product.pk} sku={sku.pk} "

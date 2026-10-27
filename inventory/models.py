@@ -21,6 +21,11 @@ class Product(models.Model):
 
 class SKU(models.Model):
     """A sellable unit-variant, e.g. 'Frozen Chicken 20 kg carton'."""
+
+    selling_price = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text="Price we sell at — separate from cost of goods.",
+    )
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="skus")
     code = models.CharField(max_length=40, unique=True)
     description = models.CharField(max_length=200, blank=True)
