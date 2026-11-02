@@ -6,8 +6,24 @@ __pycache__/
 staticfiles/
 .pytest_cache/
 .DS_Store
-config/settings/
-tests
 inventory/management/commands/seed.py
+
+# Python
+*.pyo
+# Virtual environments
+venv/
+env/
+# Environment secrets
+.env.*
+!.env.example
+# Django generated files
+media/
+# IDE
+.idea/
+# Test and coverage artifacts
+.coverage
+htmlcov/
+# Local database files
+db.sqlite3
 
 
