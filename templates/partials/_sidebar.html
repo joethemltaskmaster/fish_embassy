@@ -1,0 +1,52 @@
+<aside class="sidebar">
+  <div class="sidebar__brand">
+    <span class="sidebar__brand-mark">R</span>
+    <span class="sidebar__brand-text">RAO Fish Embassy</span>
+  </div>
+
+  <nav class="sidebar__nav">
+    <a href="{% url 'dashboard_index' %}"
+       class="sidebar__link {% if active_section == 'dashboard' %}is-active{% endif %}">
+      <span class="sidebar__icon" aria-hidden="true">▤</span>
+      <span>Dashboard</span>
+    </a>
+    <a href="{% url 'inventory:index' %}"
+       class="sidebar__link {% if active_section == 'inventory' %}is-active{% endif %}">
+      <span class="sidebar__icon" aria-hidden="true">▦</span>
+      <span>Inventory</span>
+    </a>
+    <a href="{% url 'purchasing:index' %}"
+       class="sidebar__link {% if active_section == 'purchasing' %}is-active{% endif %}">
+      <span class="sidebar__icon" aria-hidden="true">⬇</span>
+      <span>Purchasing</span>
+    </a>
+
+    {% if perms.sales.add_sale %}
+    <a href="{% url 'sales:index' %}"
+       class="sidebar__link {% if active_section == 'sales' %}is-active{% endif %}">
+      <span class="sidebar__icon" aria-hidden="true">⬆</span>
+      <span>Sales</span>
+    </a>
+    {% endif %}
+
+    {% if perms.costing.view_reports %}
+    <a href="{% url 'reports_index' %}"
+       class="sidebar__link {% if active_section == 'reports' %}is-active{% endif %}">
+      <span class="sidebar__icon" aria-hidden="true">▥</span>
+      <span>Reports</span>
+    </a>
+    {% endif %}
+
+    {% if perms.auth.view_user %}
+    <a href="{% url 'administration_index' %}"
+       class="sidebar__link {% if active_section == 'administration' %}is-active{% endif %}">
+      <span class="sidebar__icon" aria-hidden="true">⚙</span>
+      <span>Administration</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar__footer">
+    <span class="sidebar__version">v0.1 · prototype</span>
+  </div>
+</aside>

@@ -1,0 +1,37 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}RAO Fish Embassy{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <div class="layout">
+    {% include "partials/_sidebar.html" %}
+
+    <div class="layout__main">
+      {% include "partials/_topbar.html" %}
+      {% include "partials/_messages.html" %}
+
+      <main class="content">
+        <header class="page-header">
+          <div>
+            <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+            {% block page_subtitle %}{% endblock %}
+          </div>
+          <div class="page-actions">
+            {% block page_actions %}{% endblock %}
+          </div>
+        </header>
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

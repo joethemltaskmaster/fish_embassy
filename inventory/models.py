@@ -96,15 +96,14 @@ class Batch(models.Model):
 
 
 class StockMovement(models.Model):
-    """
-    Append-only ledger of stock changes.
+    # ... existing fields ...
 
-    Two layers guard this:
-      1. Model-level — save() on an existing row raises; delete() raises.
-      2. DB-level  — BEFORE UPDATE / DELETE trigger (migration 0002).
-    Queryset operations (`.update()`, `.delete()`) bypass layer 1 and are
-    stopped by layer 2 only. That is why both layers exist.
-    """
+    class Meta:
+        ordering = ["-occurred_at", "-id"]
+        indexes = [models.Index(fields=["sku", "-occurred_at"])]
+        permissions = [
+            ("approve_adjustments", "Can approve stock adjustments"),
+        ]
 
     class MovementType(models.TextChoices):
         RECEIVE = "RECEIVE", "Receive"
@@ -125,10 +124,6 @@ class StockMovement(models.Model):
     unit_cost = models.DecimalField(max_digits=14, decimal_places=2)
     reference = models.CharField(max_length=100, blank=True)
     occurred_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-occurred_at", "-id"]
-        indexes = [models.Index(fields=["sku", "-occurred_at"])]
 
     def save(self, *args, **kwargs):
         if not self._state.adding:

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Not found — RAO Fish Embassy{% endblock %}
+{% block page_title %}Page not found{% endblock %}
+{% block content %}
+  <div class="empty-state">
+    <h2 class="empty-state__title">That page does not exist</h2>
+    <p class="empty-state__body">Check the URL, or return to the dashboard.</p>
+    <p style="margin-top: 24px;"><a href="{% url 'dashboard_index' %}" class="btn btn--primary">Return to dashboard</a></p>
+  </div>
+{% endblock %}
