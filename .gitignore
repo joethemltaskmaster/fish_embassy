@@ -28,11 +28,20 @@ local_settings.py
 .idea/
 *.swp
 .DS_Store
+<<<<<<< HEAD
 
 # Testing / coverage
 .pytest_cache/
 .coverage
 htmlcov/
+=======
+inventory/management/commands/seed.py
+
+# Python
+*.pyo
+db.sqlite3
+
+>>>>>>> 1f801489d86dc6133fc3701bab7f75c2f4c0c2cd
 
 # Local artifacts
 *.log
