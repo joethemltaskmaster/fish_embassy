@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load rao_format %}
+
+{% block title %}Weekly Report — RAO Fish Embassy{% endblock %}
+{% block page_title %}Weekly Business Report{% endblock %}
+{% block page_subtitle %}
+  <p class="page-subtitle">Period: {{ report.period.start }} to {{ report.period.end }}</p>
+{% endblock %}
+
+{% block content %}
+  <div style="max-width: 800px; margin: 0 auto; background: var(--surface); padding: 32px; border-radius: var(--radius); border: 1px solid var(--border);">
+    
+    <h2 style="border-bottom: 2px solid var(--border); padding-bottom: 8px; margin-bottom: 24px;">1. Executive Summary</h2>
+    <table class="table" style="margin-bottom: 32px;">
+      <tr><th style="width: 50%;">Total Revenue</th><td class="num">{{ report.sales.revenue|naira }}</td></tr>
+      <tr><th>Cost of Goods Sold (COGS)</th><td class="num">{{ report.profit.cogs|naira }}</td></tr>
+      <tr><th>Gross Profit</th><td class="num" style="font-weight: bold; color: var(--success);">{{ report.profit.gross_profit|naira }}</td></tr>
+      <tr><th>Gross Margin</th><td class="num">{{ report.profit.gross_margin_percent }}%</td></tr>
+      <tr><th>Transactions Processed</th><td class="num">{{ report.sales.transaction_count }}</td></tr>
+    </table>
+
+    <h2 style="border-bottom: 2px solid var(--border); padding-bottom: 8px; margin-bottom: 24px;">2. Inventory Position</h2>
+    <table class="table" style="margin-bottom: 32px;">
+      <tr><th style="width: 50%;">Total Inventory Valuation</th><td class="num">{{ report.inventory.total_inventory_value|naira }}</td></tr>
+      <tr><th>Total Units in Stock</th><td class="num">{{ report.inventory.total_units|qty }}</td></tr>
+      <tr><th>Low Stock Alerts</th><td class="num">{{ report.low_stock|length }} SKUs require reordering</td></tr>
+      <tr><th>Expiring Batches (30 days)</th><td class="num">{{ report.expiring|length }} batches approaching expiry</td></tr>
+    </table>
+
+    <h2 style="border-bottom: 2px solid var(--border); padding-bottom: 8px; margin-bottom: 24px;">3. Top Performing Products</h2>
+    <table class="table">
+      <thead>
+        <tr><th>SKU</th><th>Revenue Generated</th></tr>
+      </thead>
+      <tbody>
+        {% for p in report.top_products %}
+          <tr>
+            <td><strong>{{ p.sku_code }}</strong> ({{ p.product_name }})</td>
+            <td class="num">{{ p.revenue|naira }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="2">No sales recorded this week.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top: 48px; text-align: center;">
+      <button onclick="window.print()" class="btn btn--ghost">🖨️ Print Report</button>
+    </div>
+  </div>
+{% endblock %}

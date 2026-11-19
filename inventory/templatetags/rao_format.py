@@ -20,6 +20,12 @@ def naira(value):
         return _EM_DASH
     return f"₦{d:,.2f}"
 
+@register.filter
+def multiply(value, arg):
+    try:
+        return Decimal(str(value)) * Decimal(str(arg))
+    except:
+        return 0
 
 @register.filter
 def qty(value):

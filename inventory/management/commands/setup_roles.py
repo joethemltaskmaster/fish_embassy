@@ -21,24 +21,35 @@ ROLE_PERMISSIONS = {
     "Manager": [
         # Inventory — full read, can approve adjustments
         "inventory.view_product",
+        "inventory.add_product",
+        "inventory.change_product",
         "inventory.view_sku",
+        "inventory.add_sku",
+        "inventory.change_sku",
+        "inventory.view_location",
+        "inventory.add_location",
+        "inventory.change_location",
         "inventory.view_batch",
         "inventory.view_stockmovement",
-        "inventory.view_location",
         "inventory.approve_adjustments",
 
         # Purchasing — full read + record receipts
         "purchasing.view_supplier",
+        "purchasing.add_supplier",
+        "purchasing.change_supplier",
         "purchasing.view_receipt",
         "purchasing.view_receiptline",
         "purchasing.add_receipt",
 
         # Sales — full read + record sales
         "sales.view_customer",
+        "sales.add_customer",
+        "sales.change_customer",
         "sales.view_sale",
+        "sales.view_all_sales",
+        "sales.add_sale",
         "sales.view_saleline",
         "sales.view_saleallocation",
-        "sales.add_sale",
 
         # Costing — can see costs and reports
         "costing.view_skubalance",
@@ -48,21 +59,52 @@ ROLE_PERMISSIONS = {
         # Audit — full read
         "audit.view_auditlog",
         "audit.view_audit_history",
+
+        # Costing & Audit
+        "costing.view_skubalance", "costing.view_costs", "costing.view_reports",
+        "costing.view_operatingexpense", "costing.add_operatingexpense",  # <-- Add these two
+        "audit.view_auditlog", "audit.view_audit_history",
+    ],
+
+    "Sales Staff": [  # <-- NEW ROLE
+        # Inventory (Read-only, no costs)
+        "inventory.view_product",
+        "inventory.view_sku",
+        "costing.view_skubalance",
+        "inventory.view_batch",
+        "inventory.view_location",
+
+        # Sales (Can record, can view customers)
+        "sales.view_customer",
+        "sales.add_customer",
+        "sales.change_customer",
+        "sales.view_sale",
+        "sales.add_sale",
+
+        # Explicitly NOT included: purchasing.*, costing.view_costs,
+        # costing.view_reports, audit.view_audit_history, auth.view_user
     ],
 
     "Inventory Staff": [
         # Inventory — full read
         "inventory.view_product",
         "inventory.view_sku",
+        "inventory.view_location",
+        "inventory.add_location",
+        "inventory.change_location",
         "inventory.view_batch",
         "inventory.view_stockmovement",
-        "inventory.view_location",
 
         # Purchasing — full read + record receipts
         "purchasing.view_supplier",
+        "purchasing.add_supplier",
+        "purchasing.change_supplier",
         "purchasing.view_receipt",
         "purchasing.view_receiptline",
         "purchasing.add_receipt",
+
+        # Stock quantities only; no cost visibility
+        "costing.view_skubalance",
 
         # Explicitly NOT: any sales.*, any costing.view_costs/view_reports,
         # any audit.*, inventory.approve_adjustments

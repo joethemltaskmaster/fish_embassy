@@ -1,10 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Purchasing — RAO Fish Embassy{% endblock %}
 {% block page_title %}Purchasing{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Suppliers, receipts, deliveries — Phase 4.</p>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Suppliers and incoming stock</p>{% endblock %}
+
 {% block content %}
-  <div class="empty-state">
-    <h2 class="empty-state__title">Purchasing workflows arrive in Phase 4</h2>
-    <p class="empty-state__body">Suppliers, receipt history, and stock receiving via the existing <code>receive_stock()</code> service.</p>
+  <div class="card-grid">
+    <a class="card" href="{% url 'purchasing:suppliers' %}">
+      <div class="card__label">Suppliers</div>
+      <div class="card__value">{{ counts.suppliers }}</div>
+      <div class="card__hint">Active vendors</div>
+    </a>
+    <a class="card" href="{% url 'purchasing:receipts' %}">
+      <div class="card__label">Receipts</div>
+      <div class="card__value">{{ counts.receipts }}</div>
+      <div class="card__hint">Total deliveries recorded</div>
+    </a>
+  </div>
+  <div style="margin-top: 24px;">
+    {% if perms.purchasing.add_receipt %}
+      <a href="{% url 'purchasing:receive' %}" class="btn btn--primary">Record a Delivery</a>
+    {% endif %}
   </div>
 {% endblock %}

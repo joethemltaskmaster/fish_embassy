@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Register Customer — Sales{% endblock %}
+{% block page_title %}Register Customer{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'sales:customers' %}">← Back to Customers</a></p>
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="form-error">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+      {% endfor %}
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn btn--primary">Save Customer</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Add Staff — Administration{% endblock %}
+{% block page_title %}Add Staff Account{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'administration_index' %}">← Back to Administration</a></p>
+
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="form-error">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+      {% endfor %}
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn btn--primary">Create Account</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

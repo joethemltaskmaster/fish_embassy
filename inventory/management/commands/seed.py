@@ -1,172 +1,174 @@
-from datetime import date
+import random
+from datetime import date, timedelta
 from decimal import Decimal
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from costing.models import SKUBalance
-from inventory.models import Location, Product, SKU
-from purchasing.models import Supplier
+from inventory.models import Location, Product, SKU, Batch
+from purchasing.models import Supplier, Receipt
 from purchasing.services import receive_stock
-from sales.models import Customer
+from sales.models import Customer, Sale
+from sales.services import sell_stock, InsufficientStock
+from django.utils import timezone
 
 
 class Command(BaseCommand):
-    help = (
-        "Seed sample data: Supplier A, Frozen Chicken 20 kg SKU, "
-        "Location MAIN, opening 100 cartons @ ₦21,000."
-    )
+    help = "Generate deterministic synthetic dataset for RAO Fish Embassy."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--skip-stock",
-            action="store_true",
-            help="Create the catalog only, no opening receipt.",
-        )
-
-        parser.add_argument(
-            "--with-demo-users",
-            action="store_true",
-            help="Create demo Manager and Inventory Staff users "
-                 "(password printed to stdout; demo/dev only).",
-        )
+        parser.add_argument("--skip-stock", action="store_true", help="Only create master data.")
+        parser.add_argument("--with-demo-users", action="store_true", help="Create demo users.")
 
     @transaction.atomic
     def handle(self, *args, **opts):
-        product, _ = Product.objects.get_or_create(
-            name="Frozen Fish",
-            defaults={"description": "Bulk frozen fish cartons"},
-        )
+        random.seed(42)  # Deterministic generation
+        self.stdout.write("Seeding Master Data...")
 
-        sku, created = SKU.objects.get_or_create(
-            code="CHICKEN-20KG",
-            defaults={
-                "product": product,
-                "unit_weight_kg": Decimal("20.000"),
-                "base_unit": "carton",
-                "description": "20 kg carton",
-                "selling_price": Decimal("25000.00"),
-            },
-        )
+        # 1. Locations
+        locs = [Location.objects.get_or_create(code=f"LOC-{i}", defaults={"name": f"Freezer {i}"})[0] for i in
+                range(1, 4)]
 
-        if not created and (
-            sku.selling_price is None
-            or sku.selling_price == 0
-        ):
-            sku.selling_price = Decimal("25000.00")
-            sku.save(update_fields=["selling_price"])
+        # 2. Suppliers & Customers
+        suppliers = [Supplier.objects.get_or_create(name=f"Supplier {i}")[0] for i in range(1, 7)]
+        customers = [Customer.objects.get_or_create(name=f"Customer {i}")[0] for i in range(1, 21)]
 
-            self.stdout.write(self.style.WARNING(
-                f"backfilled selling_price on {sku.code} to ₦25,000"
-            ))
+        # 3. Products & SKUs (Strictly following Section 2.1)
+        catalogue = [
+            ("Frozen Chicken", "CHICKEN-20KG", Decimal("25000"), 20),
+            ("Frozen Turkey", "TURKEY-10KG", Decimal("18000"), 10),
+            ("Frozen Croaker", "CROAKER-10KG", Decimal("15000"), 10),
+            ("Frozen Catfish", "CATFISH-10KG", Decimal("12000"), 10),
+            ("Frozen Mackerel", "MACKEREL-10KG", Decimal("10000"), 10),
+            ("Frozen Beef", "BEEF-5KG", Decimal("20000"), 5),
+            ("Frozen Prawns", "PRAWNS-1KG", Decimal("8000"), 1),
+        ]
 
-        location, _ = Location.objects.get_or_create(
-            code="MAIN",
-            defaults={"name": "Main Freezer"},
-        )
+        skus = []
+        for prod_name, sku_code, price, weight in catalogue:
+            prod, _ = Product.objects.get_or_create(name=prod_name)
+            sku, _ = SKU.objects.get_or_create(
+                code=sku_code,
+                defaults={"product": prod, "selling_price": price, "unit_weight_kg": weight}
+            )
+            skus.append(sku)
 
-        supplier, _ = Supplier.objects.get_or_create(
-            name="Supplier A",
-            defaults={"phone": "+234 800 000 0000"},
-        )
-
-        customer, _ = Customer.objects.get_or_create(
-            name="Customer 1"
-        )
-
-        self.stdout.write(f"customer={customer.pk}")
-
-        self.stdout.write(
-            f"catalog: product={product.pk} sku={sku.pk} "
-            f"location={location.pk} supplier={supplier.pk}"
-        )
-
-        # Optional development-only demo users.
         if opts["with_demo_users"]:
             self._create_demo_users()
 
         if opts["skip_stock"]:
-            self.stdout.write(
-                "--skip-stock set, no opening receipt written"
-            )
+            self.stdout.write(self.style.WARNING("Skipping stock generation."))
             return
 
-        existing = (
-            SKUBalance.objects
-            .filter(sku=sku)
-            .values_list("qty", flat=True)
-            .first() or 0
-        )
+        self.stdout.write("Seeding Transactions...")
 
-        if existing:
-            self.stdout.write(
-                f"sku already has balance {existing}, "
-                "skipping opening receipt"
+        # 4. Generate Receipts (Multi-line allowed)
+        for i in range(1, 21):
+            ref = f"RCV-SEED-{i:03d}"
+            # Correct Idempotency Check (Section 8)
+            if Receipt.objects.filter(reference=ref).exists():
+                continue
+
+            lines = []
+            # 1 to 3 lines per receipt
+            for _ in range(random.randint(1, 3)):
+                sku = random.choice(skus)
+                # Cost is 80% of selling price
+                cost = sku.selling_price * Decimal("0.8")
+                lines.append({
+                    'sku': sku,
+                    'location': random.choice(locs),
+                    'qty': Decimal(random.randint(20, 100)),
+                    'unit_cost': cost,
+                    'expiry_date': date.today() + timedelta(days=random.randint(30, 365))
+                })
+
+            now = timezone.now()
+
+            # ... Inside the Receipt generation loop (i=1 to 20):
+            days_ago = random.randint(30, 90)  # Receipts happened 1 to 3 months ago
+            receipt_date = now - timedelta(days=days_ago)
+
+            receive_stock(
+                supplier=random.choice(suppliers),
+                reference=ref,
+                lines=lines,
+                received_at=receipt_date  # Need to add 'received_at' to receive_stock signature
             )
-            return
 
-        receipt = receive_stock(
-            supplier=supplier,
-            sku=sku,
-            location=location,
-            qty=Decimal("100"),
-            unit_cost=Decimal("21000"),
-            expiry_date=date(2026, 12, 31),
-            reference="opening",
-        )
+            # ... Inside the Sale generation loop (i=1 to 40):
+            days_ago = random.randint(1, 29)  # Sales happened in the last month
+            sale_date = now - timedelta(days=days_ago)
 
-        self.stdout.write(self.style.SUCCESS(
-            f"opening receipt #{receipt.pk}: "
-            "100 cartons @ ₦21,000 (expiry 2026-12-31)"
-        ))
+            sell_stock(
+                customer=random.choice(customers),
+                idempotency_key=f"idem-{ref}",
+                reference=ref,
+                lines=lines,
+                occurred_at=sale_date
+            )
+
+
+
+        # 5. Generate Sales (Multi-line allowed)
+        for i in range(1, 41):
+            ref = f"SAL-SEED-{i:03d}"
+            if Sale.objects.filter(reference=ref).exists():
+                continue
+
+            lines = []
+            for _ in range(random.randint(1, 2)):
+                sku = random.choice(skus)
+                # Ensure enough stock before building the line
+                bal = SKUBalance.objects.get(sku=sku).qty
+                if bal > 10:
+                    lines.append({
+                        'sku': sku,
+                        'qty': Decimal(random.randint(1, 5)),
+                    })
+
+            if lines:
+                try:
+                    sell_stock(
+                        customer=random.choice(customers),
+                        idempotency_key=f"idem-{ref}",
+                        reference=ref,
+                        lines=lines
+                    )
+                except InsufficientStock as e:
+                    self.stderr.write(f"Seed Sale skipped: {e}")
+                except Exception as e:
+                    # Do NOT silently swallow (Section 3, Rule 9)
+                    self.stderr.write(self.style.ERROR(f"Seed Sale failed: {str(e)}"))
+                    raise
+
+        self.stdout.write(self.style.SUCCESS("Seeding complete."))
 
     def _create_demo_users(self):
-        """Dev-only demo users. Prints password so the operator can sign in."""
-
         User = get_user_model()
         password = "demo-pass-change-me"
 
-        try:
-            manager_group = Group.objects.get(name="Manager")
-            staff_group = Group.objects.get(name="Inventory Staff")
+        users = [
+            ("manager_demo", "Manager"),
+            ("staff_demo", "Inventory Staff"),
+            ("sales_demo", "Sales Staff"),
+            ("super_user", None),
+        ]
 
-        except Group.DoesNotExist:
-            self.stdout.write(self.style.ERROR(
-                "Groups not found. Run "
-                "'python manage.py setup_roles' first."
-            ))
-            return
-
-        for username, group in (
-            ("manager_demo", manager_group),
-            ("staff_demo", staff_group),
-        ):
-            user, created = User.objects.get_or_create(
-                username=username,
-                defaults={
-                    "is_staff": False,
-                    "is_superuser": False,
-                },
-            )
-
+        for username, group_name in users:
+            user, created = User.objects.get_or_create(username=username)
             if created:
                 user.set_password(password)
-                user.save()
-                user.groups.add(group)
 
-                self.stdout.write(self.style.SUCCESS(
-                    f"created user '{username}' "
-                    f"in group '{group.name}'"
-                ))
+            if username == "super_user":
+                user.is_superuser = True
+                user.is_staff = True
+            elif group_name:
+                group = Group.objects.get(name=group_name)
+                # Section 8: Force group assignment even if user exists
+                user.groups.set([group])
 
-            else:
-                self.stdout.write(self.style.WARNING(
-                    f"user '{username}' already exists; skipping"
-                ))
-
-        self.stdout.write(self.style.WARNING(
-            f"demo password for both accounts: {password} "
-            "(CHANGE BEFORE USE)"
-        ))
+            user.save()
+            self.stdout.write(f"User {username} ready.")

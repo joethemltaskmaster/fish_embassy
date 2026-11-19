@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Audit — Reports{% endblock %}
+{% block page_title %}Audit Trail{% endblock %}
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'reports_index' %}">← Back to Reports</a></p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Action</th>
+        <th>Target</th>
+        <th>Payload (Summary)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in rows %}
+        <tr>
+          <td>{{ log.created_at|datetime_short }}</td>
+          <td><span class="badge badge--info">{{ log.action }}</span></td>
+          <td>{{ log.target }}</td>
+          <td>{{ log.get_natural_description }}</td> <!-- Replaced raw JSON -->
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

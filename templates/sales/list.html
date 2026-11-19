@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Sales History — RAO Fish Embassy{% endblock %}
+{% block page_title %}Sales History{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Recorded transactions and their batch allocations</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'sales:index' %}">← Back to Sales</a></p>
+
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search by customer or reference…" class="form-control" style="max-width:320px;">
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Reference</th>
+          <th class="num">Total (₦)</th>
+          <th>Sold By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in rows %}
+          <tr>
+            <td>{{ sale.occurred_at|datetime_short }}</td>
+            <td><strong>{{ sale.customer.name }}</strong></td>
+            <td>{{ sale.reference|default:"—" }}</td>
+            <td class="num">{{ sale.total_price|naira }}</td>
+            <td>{{ sale.sold_by.get_username|default:"System" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No sales" body="Record a sale to see it here." %}
+  {% endif %}
+{% endblock %}

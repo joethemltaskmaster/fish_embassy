@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant — RAO Fish Embassy{% endblock %}
+{% block page_title %}Business Intelligence Chat{% endblock %}
+{% block page_subtitle %}
+  <p class="page-subtitle">Ask questions about your business data.</p>
+{% endblock %}
+
+{% block content %}
+  <div class="chat-container" style="max-width: 800px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; height: 600px;">
+    
+    <!-- Chat History -->
+    <div id="chat-history" style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+      <div class="message message--info" style="align-self: flex-start; max-width: 80%;">
+        Hello! I am your AI Business Analyst. I can tell you about your revenue, top-selling products, expiring stock, and more. What would you like to know?
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div style="padding: 16px; border-top: 1px solid var(--border); background: #f9fafb;">
+      <form id="chat-form" style="display: flex; gap: 12px;">
+        {% csrf_token %}
+        <input type="text" id="chat-input" class="form-control" placeholder="e.g., What was my revenue last week?" autocomplete="off" style="flex: 1;">
+        <button type="submit" class="btn btn--primary">Send</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+  const chatHistory = document.getElementById('chat-history');
+  let historyState = [];
+
+  function appendMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `message message--${role === 'user' ? 'primary' : 'info'}`;
+    div.style.alignSelf = role === 'user' ? 'flex-end' : 'flex-start';
+    div.style.maxWidth = '80%';
+    div.style.background = role === 'user' ? 'var(--brand)' : 'var(--info-bg)';
+    div.style.color = role === 'user' ? '#fff' : 'var(--info)';
+    div.textContent = text;
+    chatHistory.appendChild(div);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+  }
+
+  chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    appendMessage('user', message);
+    chatInput.value = '';
+    
+    // Add a temporary loading message
+    const loadingId = 'loading-' + Date.now();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = loadingId;
+    loadingDiv.className = 'message message--info';
+    loadingDiv.textContent = 'Analyzing data...';
+    loadingDiv.style.alignSelf = 'flex-start';
+    chatHistory.appendChild(loadingDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+
+    try {
+      const response = await fetch('{% url "business_ai:api" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ message: message, history: historyState })
+      });
+
+      const data = await response.json();
+      
+      // Remove loading
+      document.getElementById(loadingId).remove();
+
+      if (data.error) {
+        appendMessage('ai', 'Error: ' + data.error);
+      } else {
+        appendMessage('ai', data.reply);
+        
+        // Save to history for context
+        historyState.push({ role: 'user', content: message });
+        historyState.push({ role: 'assistant', content: data.reply });
+      }
+    } catch (err) {
+      document.getElementById(loadingId).remove();
+      appendMessage('ai', 'Network error. Please try again.');
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Receive Stock — Purchasing — RAO Fish Embassy{% endblock %}
+{% block page_title %}Record a Delivery{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Receive new stock into inventory</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'purchasing:index' %}">← Back to Purchasing</a></p>
+
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_token" value="{{ form_token }}">
+
+      {% if form.non_field_errors %}
+        <div class="message message--error">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="form-group">
+          <label for = "{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}
+            <p class="form-error">{{ field.errors.0 }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div style="margin-top: 24px; display: flex; gap: 12px;">
+        <button type="submit" class="btn btn--primary">Record Delivery</button>
+        <a href="{% url 'purchasing:index' %}" class="btn btn--ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

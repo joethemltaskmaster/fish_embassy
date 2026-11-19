@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Expiry — Reports{% endblock %}
+{% block page_title %}Expiry Schedule{% endblock %}
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'reports_index' %}">← Back to Reports</a></p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Expiry Date</th>
+        <th>SKU</th>
+        <th>Location</th>
+        <th class="num">Remaining</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for batch in rows %}
+        <tr>
+          <td>{{ batch.expiry_date|date_short }}</td>
+          <td><strong>{{ batch.sku.code }}</strong></td>
+          <td>{{ batch.location.code }}</td>
+          <td class="num">{{ batch.remaining_qty|qty }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4">No stock on hand.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

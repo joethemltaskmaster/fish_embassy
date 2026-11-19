@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Valuation — Reports{% endblock %}
+{% block page_title %}Inventory Valuation{% endblock %}
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'reports_index' %}">← Back to Reports</a></p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>Product</th>
+        <th class="num">Qty</th>
+        <th class="num">Avg Cost</th>
+        <th class="num">Total Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><strong>{{ row.sku.code }}</strong></td>
+          <td>{{ row.sku.product.name }}</td>
+          <td class="num">{{ row.qty|qty }}</td>
+          <td class="num">{{ row.avg_cost|naira }}</td>
+          <td class="num">{{ row.qty|multiply:row.avg_cost|naira }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">No stock on hand.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

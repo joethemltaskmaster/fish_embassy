@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
@@ -12,8 +12,10 @@ from sales.services import sell_stock
 
 class FEFOSelectionTest(TestCase):
     def setUp(self):
-        product = Product.objects.create(name="Frozen Chicken")
-        self.sku = SKU.objects.create(product=product, code="CHICKEN-20KG")
+        product = Product.objects.create(name="Frozen Fish")
+        self.sku = SKU.objects.create(
+            product=product, code="FISH-20KG", selling_price=Decimal("25000")
+        )
         self.location = Location.objects.create(code="MAIN", name="Main Freezer")
         self.supplier = Supplier.objects.create(name="Supplier A")
         self.customer = Customer.objects.create(name="Customer 1")
@@ -26,8 +28,11 @@ class FEFOSelectionTest(TestCase):
         )
 
     def test_earliest_expiry_consumed_first(self):
-        self._receive(50, 21000, date(2026, 6, 1))    # batch A — expiring first
-        self._receive(50, 22000, date(2026, 12, 31))  # batch B
+        # Batch A: Expires in 10 days
+        self._receive(50, 21000, date.today() + timedelta(days=10))
+        # Batch B: Expires in 100 days
+        self._receive(50, 22000, date.today() + timedelta(days=100))
+
         sell_stock(
             customer=self.customer, sku=self.sku,
             qty=Decimal("60"), idempotency_key="fefo-1",
@@ -38,8 +43,9 @@ class FEFOSelectionTest(TestCase):
         self.assertEqual(batches[1].remaining_qty, Decimal("40.000"))   # B → 40 left
 
     def test_two_allocations_when_splitting_across_batches(self):
-        self._receive(50, 21000, date(2026, 6, 1))
-        self._receive(50, 22000, date(2026, 12, 31))
+        self._receive(50, 21000, date.today() + timedelta(days=10))
+        self._receive(50, 22000, date.today() + timedelta(days=100))
+
         sale = sell_stock(
             customer=self.customer, sku=self.sku,
             qty=Decimal("60"), idempotency_key="fefo-2",

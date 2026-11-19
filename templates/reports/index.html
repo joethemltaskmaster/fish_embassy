@@ -1,10 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Reports — RAO Fish Embassy{% endblock %}
 {% block page_title %}Reports{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Inventory valuation, COGS, margins, expiry — Phase 5.</p>{% endblock %}
+
 {% block content %}
-  <div class="empty-state">
-    <h2 class="empty-state__title">Reports arrive in Phase 5</h2>
-    <p class="empty-state__body">Valuation, costing, sales performance, margin, expiry, and audit — each gated by permission.</p>
+  <div class="card-grid">
+    {% if perms.costing.view_costs %}
+      <a class="card" href="{% url 'reports_valuation' %}">
+        <div class="card__label">Inventory Valuation</div>
+        <div class="card__hint">Total capital tied up in stock</div>
+      </a>
+    {% endif %}
+
+    {% if perms.sales.view_sale %}
+      <a class="card" href="{% url 'reports_sales' %}">
+        <div class="card__label">Sales Performance</div>
+        <div class="card__hint">Revenue by customer (30 days)</div>
+      </a>
+    {% endif %}
+
+    {% if perms.inventory.view_batch %}
+      <a class="card" href="{% url 'reports_expiry' %}">
+        <div class="card__label">Expiry Schedule</div>
+        <div class="card__hint">All current stock by expiry date</div>
+      </a>
+    {% endif %}
+
+    {% if perms.audit.view_audit_history %}
+      <a class="card" href="{% url 'reports_audit' %}">
+        <div class="card__label">Audit Trail</div>
+        <div class="card__hint">System action history</div>
+      </a>
+    {% endif %}
   </div>
 {% endblock %}

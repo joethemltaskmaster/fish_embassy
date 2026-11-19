@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Sales — Reports{% endblock %}
+{% block page_title %}Sales Performance{% endblock %}
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'reports_index' %}">← Back to Reports</a></p>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th class="num">Transactions</th>
+        <th class="num">Total Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.customer__name }}</td>
+          <td class="num">{{ row.transaction_count }}</td>
+          <td class="num">{{ row.total_revenue|naira }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3">No sales in the last 30 days.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

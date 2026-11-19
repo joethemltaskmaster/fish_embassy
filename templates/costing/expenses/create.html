@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Record Expense — RAO Fish Embassy{% endblock %}
+{% block page_title %}Record Expense{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'expenses_list' %}">← Back to Expenses</a></p>
+
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="form-error">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+      {% endfor %}
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn btn--primary">Save Expense</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

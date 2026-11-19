@@ -14,7 +14,11 @@ from sales.services import InsufficientStock, sell_stock
 class OversellTest(TestCase):
     def setUp(self):
         product = Product.objects.create(name="Frozen Chicken")
-        self.sku = SKU.objects.create(product=product, code="CHICKEN-20KG")
+        self.sku = SKU.objects.create(
+        product=product,
+        code="FISH-20KG",
+        selling_price=Decimal("25000.00"),
+        )
         self.location = Location.objects.create(code="MAIN", name="Main Freezer")
         self.supplier = Supplier.objects.create(name="Supplier A")
         self.customer = Customer.objects.create(name="Customer 1")

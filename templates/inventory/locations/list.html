@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Locations — Inventory — RAO Fish Embassy{% endblock %}
+{% block page_title %}Locations{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Storage areas</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'inventory:index' %}">← Back to Inventory</a></p>
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search code or name…" class="form-control" style="max-width:320px;">
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Locations</h2>
+    {% if perms.inventory.add_location %}
+      <a href="{% url 'inventory:location_create' %}" class="btn btn--primary btn--sm">+ Add Location</a>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th class="num">Batches</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.code }}</strong></td>
+            <td>{{ row.name }}</td>
+            <td class="num">{{ row.batch_count }}</td>
+            <td>
+              {% if row.is_active %}
+                <span class="badge badge--success">Active</span>
+              {% else %}
+                <span class="badge badge--neutral">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No locations" %}
+  {% endif %}
+{% endblock %}

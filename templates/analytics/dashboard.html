@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load rao_format %}
+
+{% block title %}Business Intelligence — RAO Fish Embassy{% endblock %}
+{% block page_title %}Business Intelligence{% endblock %}
+{% block page_subtitle %}
+  <p class="page-subtitle">Management Dashboard (Last 30 Days: {{ period.start }} to {{ period.end }})</p>
+{% endblock %}
+
+{% block page_actions %}
+  <a href="{% url 'analytics:weekly_report' %}" class="btn btn--primary">Generate Weekly Report</a>
+{% endblock %}
+
+{% block content %}
+   <!-- Top KPI Cards -->
+  <div class="card-grid" style="margin-bottom: 24px;">
+    <div class="card">
+      <div class="card__label">Revenue (30d)</div>
+      <div class="card__value">{{ sales.revenue|naira }}</div>
+      <div class="card__hint">{{ sales.transaction_count }} transactions</div>
+    </div>
+
+    <div class="card">
+      <div class="card__label">Gross Profit</div>
+      <div class="card__value">{{ profit.gross_profit|naira }}</div>
+      <div class="card__hint">{{ profit.gross_margin_percent }}% Margin</div>
+    </div>
+
+    <div class="card">
+      <div class="card__label">Operating Expenses</div>
+      <div class="card__value" style="color: var(--danger);">{{ operating.operating_expenses|naira }}</div>
+      <div class="card__hint">Rent, salaries, etc.</div>
+    </div>
+
+    <div class="card" style="border: 2px solid var(--success);">
+      <div class="card__label">Net Operating Profit</div>
+      <div class="card__value" style="color: var(--success);">{{ operating.operating_profit|naira }}</div>
+      <div class="card__hint">Bottom line</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Top Selling -->
+    <div>
+      <h3 class="section-title">Top Selling Products (by Revenue)</h3>
+      <table class="table">
+        <thead>
+          <tr><th>SKU</th><th>Product</th><th class="num">Qty Sold</th><th class="num">Revenue</th></tr>
+        </thead>
+        <tbody>
+          {% for p in top_products %}
+            <tr>
+              <td><strong>{{ p.sku_code }}</strong></td>
+              <td>{{ p.product_name }}</td>
+              <td class="num">{{ p.qty_sold|qty }}</td>
+              <td class="num">{{ p.revenue|naira }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">No sales recorded in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Inventory Alerts -->
+    <div>
+      <h3 class="section-title" style="color: var(--danger);">Low Stock Alerts</h3>
+      <table class="table" style="margin-bottom: 24px;">
+        <thead>
+          <tr><th>SKU</th><th>Current Qty</th><th class="num">Reorder Level</th></tr>
+        </thead>
+        <tbody>
+          {% for s in low_stock %}
+            <tr>
+              <td><strong>{{ s.sku_code }}</strong></td>
+              <td style="color: var(--danger); font-weight: bold;">{{ s.current_qty|qty }}</td>
+              <td class="num">{{ s.reorder_level|qty }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3">All stock levels are healthy.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h3 class="section-title" style="color: var(--warning);">Expiring Soon (30 Days)</h3>
+      <table class="table">
+        <thead>
+          <tr><th>Batch</th><th>SKU</th><th>Expiry</th><th class="num">Qty</th></tr>
+        </thead>
+        <tbody>
+          {% for b in expiring %}
+            <tr>
+              <td>{{ b.batch_code }}</td>
+              <td><strong>{{ b.sku_code }}</strong></td>
+              <td>{{ b.expiry_date }}</td>
+              <td class="num">{{ b.remaining_qty|qty }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">No batches expiring in the next 30 days.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

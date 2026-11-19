@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Balances — Inventory — RAO Fish Embassy{% endblock %}
+{% block page_title %}Stock balances{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Running quantity and average cost per SKU</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'inventory:index' %}">← Back to Inventory</a></p>
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search SKU or product…" class="form-control" style="max-width:320px;">
+    <label class="checkbox-inline">
+      <input type="checkbox" name="has_stock" value="0" {% if not has_stock_only %}checked{% endif %}>
+      Show zero-stock SKUs
+    </label>
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Product</th>
+          <th class="num">On hand</th>
+          {% if show_costs %}<th class="num">Avg cost</th><th class="num">Value</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.sku_code }}</strong></td>
+            <td>{{ row.product_name }}</td>
+            <td class="num">{{ row.qty|qty }}</td>
+            {% if show_costs %}
+              <td class="num">{{ row.avg_cost|naira }}</td>
+              <td class="num">{{ row.value|naira }}</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No stock on hand" body="Balances appear once stock is received." %}
+  {% endif %}
+{% endblock %}

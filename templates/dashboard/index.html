@@ -1,10 +1,86 @@
 {% extends "base.html" %}
+{% load rao_format %}
+
 {% block title %}Dashboard — RAO Fish Embassy{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Business overview — Phase 5 will populate with live metrics.</p>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Business overview — last 30 days</p>{% endblock %}
+
 {% block content %}
-  <div class="empty-state">
-    <h2 class="empty-state__title">Dashboard metrics arrive in Phase 5</h2>
-    <p class="empty-state__body">Stock valuation, expiry alerts, sales totals, and margin — all from real DB queries, none fabricated.</p>
+  <div class="card-grid" style="margin-bottom: 24px;">
+
+    <a class="card" href="{% url 'inventory:balances' %}">
+      <div class="card__label">Active SKUs</div>
+      <div class="card__value">{{ metrics.available_skus }}</div>
+      <div class="card__hint">Items with stock on hand</div>
+    </a>
+
+    {% if can_view_costs %}
+    <div class="card">
+      <div class="card__label">Stock Valuation</div>
+      <div class="card__value">{{ metrics.total_stock_value|naira }}</div>
+      <div class="card__hint">Current total value</div>
+    </div>
+    {% endif %}
+
+    {% if can_view_sales %}
+    <a class="card" href="{% url 'sales:list' %}">
+      <div class="card__label">Sales (30d)</div>
+      <div class="card__value">{{ metrics.sales_count }}</div>
+      <div class="card__hint">{{ metrics.sales_total|naira }} revenue</div>
+    </a>
+    {% endif %}
+
+    {% if can_view_costs %}
+    <div class="card">
+      <div class="card__label">Gross Profit (30d)</div>
+      <div class="card__value">{{ metrics.gross_profit|naira }}</div>
+      <div class="card__hint">Margin before overhead</div>
+    </div>
+    {% endif %}
+
+    <a class="card" href="{% url 'inventory:batches' %}?expiry=expiring">
+      <div class="card__label">Expiring Soon</div>
+      <div class="card__value" style="color: var(--warning);">{{ metrics.expiring_batches }}</div>
+      <div class="card__hint">Batches expiring within 30 days</div>
+    </a>
+
+    <a class="card" href="{% url 'inventory:batches' %}?expiry=expired">
+      <div class="card__label">Expired Batches</div>
+      <div class="card__value" style="color: var(--danger);">{{ metrics.expired_batches }}</div>
+      <div class="card__hint">Requires immediate write-off</div>
+    </a>
   </div>
+
+  <h2 style="font-size: 16px; font-weight: 600; margin: 32px 0 16px;">Recent Activity</h2>
+
+  {% if recent_activity %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Type</th>
+          <th>SKU</th>
+          <th class="num">Qty</th>
+          <th>By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mv in recent_activity %}
+          <tr>
+            <td>{{ mv.occurred_at|datetime_short }}</td>
+            <td>
+              {% if mv.movement_type == 'RECEIVE' %}<span class="badge badge--info">Receive</span>
+              {% elif mv.movement_type == 'SALE' %}<span class="badge badge--warning">Sale</span>
+              {% else %}<span class="badge badge--neutral">Adjust</span>{% endif %}
+            </td>
+            <td><strong>{{ mv.sku.code }}</strong></td>
+            <td class="num">{{ mv.qty|qty }}</td>
+            <td>{{ mv.user.get_username|default:"System" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No activity yet" body="Stock movements will appear here." %}
+  {% endif %}
 {% endblock %}

@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 
 from inventory.models import Batch, Location, SKU, StockMovement
 
@@ -10,6 +11,11 @@ class Supplier(models.Model):
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_suppliers"
+    )
 
     class Meta:
         ordering = ["name"]
@@ -28,6 +34,11 @@ class Receipt(models.Model):
 
     class Meta:
         ordering = ["-received_at", "-id"]
+
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="receipts_received",
+    )
 
     def __str__(self):
         return f"Receipt {self.pk} · {self.supplier.name} · {self.received_at:%Y-%m-%d}"

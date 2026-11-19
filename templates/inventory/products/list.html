@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Products — Inventory — RAO Fish Embassy{% endblock %}
+{% block page_title %}Products{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Catalogue items</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'inventory:index' %}">← Back to Inventory</a></p>
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search by name…" class="form-control" style="max-width:320px;">
+    <select name="active" class="form-control" style="max-width:160px;">
+      <option value="">All statuses</option>
+      <option value="1" {% if is_active == True %}selected{% endif %}>Active</option>
+      <option value="0" {% if is_active == False %}selected{% endif %}>Inactive</option>
+    </select>
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+    {% if search or is_active is not None %}
+      <a href="{% url 'inventory:products' %}" class="btn btn--ghost btn--sm">Clear</a>
+    {% endif %}
+  </form>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Products</h2>
+    {% if perms.inventory.add_product %}
+      <a href="{% url 'inventory:product_create' %}" class="btn btn--primary btn--sm">+ Add Product</a>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th class="num">SKUs</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td class="num">{{ row.sku_count }}</td>
+            <td>
+              {% if row.is_active %}
+                <span class="badge badge--success">Active</span>
+              {% else %}
+                <span class="badge badge--neutral">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No products yet" body="Products appear here once created via the admin." %}
+  {% endif %}
+{% endblock %}

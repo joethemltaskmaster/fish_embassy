@@ -1,10 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Sales — RAO Fish Embassy{% endblock %}
 {% block page_title %}Sales{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Customers, sales, FEFO allocations — Phase 4.</p>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Customers and outgoing stock</p>{% endblock %}
+
 {% block content %}
-  <div class="empty-state">
-    <h2 class="empty-state__title">Sales workflows arrive in Phase 4</h2>
-    <p class="empty-state__body">Sales via the existing <code>sell_stock()</code> service, with idempotency, FEFO, and batch allocation.</p>
+  <div class="card-grid">
+    <a class="card" href="{% url 'sales:customers' %}">
+      <div class="card__label">Customers</div>
+      <div class="card__value">{{ counts.customers }}</div>
+      <div class="card__hint">Active buyers</div>
+    </a>
+    <a class="card" href="{% url 'sales:list' %}">
+      <div class="card__label">Sales</div>
+      <div class="card__value">{{ counts.sales }}</div>
+      <div class="card__hint">Transactions recorded</div>
+    </a>
+  </div>
+  <div style="margin-top: 24px;">
+    <a href="{% url 'sales:sell' %}" class="btn btn--primary">Record a Sale</a>
   </div>
 {% endblock %}

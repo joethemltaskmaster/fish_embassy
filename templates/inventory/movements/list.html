@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Movements — Inventory — RAO Fish Embassy{% endblock %}
+{% block page_title %}Stock movements{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Append-only ledger — every change, forever</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'inventory:index' %}">← Back to Inventory</a></p>
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search SKU or reference…" class="form-control" style="max-width:280px;">
+    <select name="type" class="form-control" style="max-width:160px;">
+      <option value="">All types</option>
+      <option value="RECEIVE" {% if movement_type == 'RECEIVE' %}selected{% endif %}>Receive</option>
+      <option value="SALE" {% if movement_type == 'SALE' %}selected{% endif %}>Sale</option>
+      <option value="ADJUST" {% if movement_type == 'ADJUST' %}selected{% endif %}>Adjustment</option>
+    </select>
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Type</th>
+          <th>SKU</th>
+          <th>Location</th>
+          <th class="num">Qty</th>
+          {% if show_costs %}<th class="num">Unit cost</th>{% endif %}
+          <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td>{{ row.occurred_at|datetime_short }}</td>
+            <td>
+              {% if row.movement_type == 'RECEIVE' %}<span class="badge badge--info">Receive</span>
+              {% elif row.movement_type == 'SALE' %}<span class="badge badge--warning">Sale</span>
+              {% else %}<span class="badge badge--neutral">Adjust</span>{% endif %}
+            </td>
+            <td><strong>{{ row.sku_code }}</strong></td>
+            <td>{{ row.location_code }}</td>
+            <td class="num">{{ row.qty|qty }}</td>
+            {% if show_costs %}<td class="num">{{ row.unit_cost|naira }}</td>{% endif %}
+            <td>{{ row.reference|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No movements" body="Movements appear once stock is received or sold." %}
+  {% endif %}
+{% endblock %}

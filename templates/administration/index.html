@@ -1,10 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Administration — RAO Fish Embassy{% endblock %}
 {% block page_title %}Administration{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Staff management, roles, audit — Phase 5.</p>{% endblock %}
+
 {% block content %}
-  <div class="empty-state">
-    <h2 class="empty-state__title">Administration arrives in Phase 5</h2>
-    <p class="empty-state__body">Staff creation, role assignment, deactivation, audit history.</p>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Staff Accounts</h2>
+    {% if perms.auth.add_user %}
+      <a href="{% url 'staff_create' %}" class="btn btn--primary btn--sm">+ Add Staff</a>
+    {% endif %}
   </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Name</th>
+        <th>Roles</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+        <tr>
+          <td><strong>{{ u.username }}</strong></td>
+          <td>{{ u.get_full_name|default:"—" }}</td>
+          <td>
+            {% for group in u.groups.all %}
+              <span class="badge badge--neutral">{{ group.name }}</span>
+            {% empty %}
+              <span class="badge badge--warning">No Role</span>
+            {% endfor %}
+            {% if u.is_superuser %}<span class="badge badge--success">Superuser</span>{% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge badge--success">Active</span>
+            {% else %}
+              <span class="badge badge--danger">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u != request.user %}
+              <form method="post" action="{% url 'staff_toggle' u.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--ghost btn--sm">
+                  {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 12px;">Current User</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+            No staff accounts found in the database.
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}

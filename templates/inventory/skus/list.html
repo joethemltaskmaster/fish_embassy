@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}SKUs — Inventory — RAO Fish Embassy{% endblock %}
+{% block page_title %}SKUs{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Sellable units</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'inventory:index' %}">← Back to Inventory</a></p>
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search code or product…" class="form-control" style="max-width:320px;">
+    <select name="active" class="form-control" style="max-width:160px;">
+      <option value="">All statuses</option>
+      <option value="1" {% if is_active == True %}selected{% endif %}>Active</option>
+      <option value="0" {% if is_active == False %}selected{% endif %}>Inactive</option>
+    </select>
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">SKUs</h2>
+    {% if perms.inventory.add_sku %}
+      <a href="{% url 'inventory:sku_create' %}" class="btn btn--primary btn--sm">+ Add SKU</a>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Product</th>
+          <th class="num">Weight (kg)</th>
+          <th>Base unit</th>
+          {% if show_costs %}<th class="num">Selling price</th>{% endif %}
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.code }}</strong></td>
+            <td>{{ row.product_name }}</td>
+            <td class="num">{{ row.unit_weight_kg|qty }}</td>
+            <td>{{ row.base_unit }}</td>
+            {% if show_costs %}<td class="num">{{ row.selling_price|naira }}</td>{% endif %}
+            <td>
+              {% if row.is_active %}
+                <span class="badge badge--success">Active</span>
+              {% else %}
+                <span class="badge badge--neutral">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No SKUs yet" body="SKUs appear here once created via the admin." %}
+  {% endif %}
+{% endblock %}

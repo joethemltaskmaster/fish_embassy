@@ -1,83 +1,96 @@
 from datetime import date
 from decimal import Decimal
-
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-
 from audit.services import record
 from costing.services import update_average_cost
 from inventory.models import Batch, Location, SKU, StockMovement
-
 from .models import Receipt, ReceiptLine, Supplier
-
 
 @transaction.atomic
 def receive_stock(
     *,
     supplier: Supplier,
-    sku: SKU,
-    location: Location,
-    qty: Decimal | int,
-    unit_cost: Decimal | int,
-    expiry_date: date,
     reference: str = "",
+    user=None,             # <-- Standardized actor argument (Section 7.1)
+    received_by=None,      # <-- Backward compatibility
+    lines: list = None,    # <-- Multi-line support
+    **kwargs
 ) -> Receipt:
+
     """
-    Record an incoming purchase for one SKU. Writes — atomically:
-
-      Receipt (header)
-      Batch (physical lot, with expiry for FEFO)
-      StockMovement (append-only RECEIVE entry)
-      ReceiptLine (links the three)
-      SKUBalance update (weighted average cost)
-      AuditLog entry
-
-    If any step fails, nothing is written.
+    Record an incoming purchase atomically.
     """
-    qty = Decimal(qty)
-    unit_cost = Decimal(unit_cost)
+    actor = user or received_by
 
-    if qty <= 0:
-        raise ValidationError({"qty": "must be positive"})
-    if unit_cost < 0:
-        raise ValidationError({"unit_cost": "cannot be negative"})
+    if lines is None:
+        # Backward compatibility wrapper for single-line calls
+        lines = [{
+            'sku': kwargs.get('sku'),
+            'location': kwargs.get('location'),
+            'qty': kwargs.get('qty'),
+            'unit_cost': kwargs.get('unit_cost'),
+            'expiry_date': kwargs.get('expiry_date'),
+        }]
 
-    receipt = Receipt.objects.create(supplier=supplier, reference=reference)
+    if not lines:
+        raise ValidationError("A receipt must have at least one line.")
 
-    batch = Batch(
-        sku=sku, location=location,
-        received_at=timezone.now(),
-        expiry_date=expiry_date,
-        received_qty=qty, remaining_qty=qty,
-        unit_cost=unit_cost,
-        reference=reference,
-    )
-    batch.save()  # full_clean() runs inside Batch.save() now
+    # Pre-validate all lines before committing
+    for line in lines:
+        if not line.get('sku') or not line.get('location'):
+            raise ValidationError("SKU and Location are required on all lines.")
+        if Decimal(line.get('qty', 0)) <= 0:
+            raise ValidationError({"qty": "Quantity must be positive."})
+        if Decimal(line.get('unit_cost', 0)) < 0:
+            raise ValidationError({"unit_cost": "Cost cannot be negative."})
+        if not line.get('expiry_date'):
+            raise ValidationError("Expiry date is required.")
 
-    movement = StockMovement.objects.create(
-        sku=sku, location=location, batch=batch,
-        movement_type=StockMovement.MovementType.RECEIVE,
-        qty=qty, unit_cost=unit_cost, reference=reference,
-    )
-
-    ReceiptLine.objects.create(
-        receipt=receipt, sku=sku, location=location,
-        qty=qty, unit_cost=unit_cost, expiry_date=expiry_date,
-        batch=batch, stock_movement=movement,
+    receipt = Receipt.objects.create(
+        supplier=supplier, reference=reference, received_by=actor,
     )
 
-    update_average_cost(sku=sku, qty=qty, unit_cost=unit_cost)
+    for line_data in lines:
+        sku = line_data['sku']
+        location = line_data['location']
+        qty = Decimal(line_data['qty'])
+        unit_cost = Decimal(line_data['unit_cost'])
+        expiry_date = line_data['expiry_date']
+
+        batch = Batch(
+            sku=sku, location=location,
+            received_at=timezone.now(),
+            expiry_date=expiry_date,
+            received_qty=qty, remaining_qty=qty,
+            unit_cost=unit_cost,
+            reference=reference,
+        )
+        batch.save()
+
+        movement = StockMovement.objects.create(
+            sku=sku, location=location, batch=batch,
+            movement_type=StockMovement.MovementType.RECEIVE,
+            qty=qty, unit_cost=unit_cost, reference=reference,
+            user=actor,  # Persisted to the existing 'user' field
+        )
+
+        ReceiptLine.objects.create(
+            receipt=receipt, sku=sku, location=location,
+            qty=qty, unit_cost=unit_cost, expiry_date=expiry_date,
+            batch=batch, stock_movement=movement,
+        )
+
+        update_average_cost(sku=sku, qty=qty, unit_cost=unit_cost)
 
     record(
         action="receive_stock",
-        target=f"{sku.code} × {qty}",
+        target=f"Receipt #{receipt.pk}",
         payload={
             "receipt_id": receipt.pk,
-            "batch_id": batch.pk,
-            "movement_id": movement.pk,
-            "unit_cost": str(unit_cost),
+            "line_count": len(lines),
+            "user_id": actor.pk if actor else None,
         },
     )
-
     return receipt

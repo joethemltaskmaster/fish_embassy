@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Receipts — Purchasing — RAO Fish Embassy{% endblock %}
+{% block page_title %}Receipts{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Recorded deliveries and their resulting batches</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'purchasing:index' %}">← Back to Purchasing</a></p>
+
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search by supplier or reference…" class="form-control" style="max-width:320px;">
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Supplier</th>
+          <th>Reference</th>
+          <th>SKU Lines</th>
+          <th>Received By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for receipt in rows %}
+          <tr>
+            <td>{{ receipt.received_at|datetime_short }}</td>
+            <td><strong>{{ receipt.supplier.name }}</strong></td>
+            <td>{{ receipt.reference|default:"—" }}</td>
+            <td class="num">{{ receipt.lines.count }}</td>
+            <td>{{ receipt.received_by.get_username|default:"System" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No receipts" body="Record a delivery to see it here." %}
+  {% endif %}
+{% endblock %}

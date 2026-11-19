@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 
 from inventory.models import Batch, SKU, StockMovement
 
@@ -12,6 +13,11 @@ class Customer(models.Model):
     email = models.EmailField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="created_customers"
+    )
 
     class Meta:
         ordering = ["name"]
@@ -33,8 +39,16 @@ class Sale(models.Model):
     total_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    sold_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="sales_made",
+    )
+
     class Meta:
         ordering = ["-occurred_at", "-id"]
+        permissions = [
+            ("view_all_sales", "Can view all sales in the system, not just their own"),
+        ]
 
     def __str__(self):
         return f"Sale {self.pk} · {self.customer.name} · ₦{self.total_price}"

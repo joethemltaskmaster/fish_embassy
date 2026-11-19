@@ -1,10 +1,58 @@
 {% extends "base.html" %}
+{% load rao_format %}
+
 {% block title %}Inventory — RAO Fish Embassy{% endblock %}
 {% block page_title %}Inventory{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Catalogue, stock balances, batches, movements — Phase 4.</p>{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Catalogue, stock balances, batches, movements.</p>{% endblock %}
+
 {% block content %}
-  <div class="empty-state">
-    <h2 class="empty-state__title">Inventory views arrive in Phase 4</h2>
-    <p class="empty-state__body">Products, SKUs, batch inventory, expiry, locations, and append-only stock movements.</p>
+  {% if expiry.expired or expiry.expiring %}
+    <div class="alert-row">
+      {% if expiry.expired %}
+        <div class="message message--error">
+          <strong>{{ expiry.expired }}</strong> expired batch{{ expiry.expired|pluralize:"es" }} —
+          <a href="{% url 'inventory:batches' %}?expiry=expired">view</a>
+        </div>
+      {% endif %}
+      {% if expiry.expiring %}
+        <div class="message message--warning">
+          <strong>{{ expiry.expiring }}</strong> batch{{ expiry.expiring|pluralize:"es" }} expiring soon —
+          <a href="{% url 'inventory:batches' %}?expiry=expiring">view</a>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="card-grid">
+    <a class="card" href="{% url 'inventory:products' %}">
+      <div class="card__label">Products</div>
+      <div class="card__value">{{ counts.products }}</div>
+      <div class="card__hint">Catalogue items</div>
+    </a>
+    <a class="card" href="{% url 'inventory:skus' %}">
+      <div class="card__label">SKUs</div>
+      <div class="card__value">{{ counts.skus }}</div>
+      <div class="card__hint">Sellable units</div>
+    </a>
+    <a class="card" href="{% url 'inventory:balances' %}">
+      <div class="card__label">Balances</div>
+      <div class="card__value">{{ counts.balances }}</div>
+      <div class="card__hint">SKUs with stock</div>
+    </a>
+    <a class="card" href="{% url 'inventory:batches' %}">
+      <div class="card__label">Batches</div>
+      <div class="card__value">{{ counts.batches }}</div>
+      <div class="card__hint">Physical lots</div>
+    </a>
+    <a class="card" href="{% url 'inventory:locations' %}">
+      <div class="card__label">Locations</div>
+      <div class="card__value">{{ counts.locations }}</div>
+      <div class="card__hint">Storage areas</div>
+    </a>
+    <a class="card" href="{% url 'inventory:movements' %}">
+      <div class="card__label">Movements</div>
+      <div class="card__value">{{ counts.movements }}</div>
+      <div class="card__hint">Append-only ledger</div>
+    </a>
   </div>
 {% endblock %}

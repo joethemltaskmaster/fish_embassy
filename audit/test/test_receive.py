@@ -64,7 +64,7 @@ class ReceiveStockTest(TestCase):
         self._receive(100, 21000)
         log = AuditLog.objects.filter(action="receive_stock")
         self.assertEqual(log.count(), 1)
-        self.assertIn("CHICKEN-20KG", log.first().target)
+        self.assertIn("Receipt #", log.first().target)
 
     def test_receive_rejects_zero_qty(self):
         with self.assertRaises(ValidationError):

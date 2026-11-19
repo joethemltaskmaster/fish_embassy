@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Customers — Sales — RAO Fish Embassy{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Buyers of our stock</p>{% endblock %}
+
+{% block content %}
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Customers</h2>
+    {% if perms.sales.add_customer %}
+      <a href="{% url 'sales:customer_create' %}" class="btn btn--primary btn--sm">+ Register Customer</a>
+    {% endif %}
+  </div>
+
+  <p class="breadcrumb"><a href="{% url 'sales:index' %}">← Back to Sales</a></p>
+
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search by name…" class="form-control" style="max-width:320px;">
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th class="num">Sales</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.name }}</strong></td>
+            <td>{{ row.phone|default:"—" }}</td>
+            <td class="num">{{ row.sale_count }}</td>
+            <td>
+              {% if row.is_active %}
+                <span class="badge badge--success">Active</span>
+              {% else %}
+                <span class="badge badge--neutral">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No customers" body="Customers appear here once created via the admin." %}
+  {% endif %}
+{% endblock %}

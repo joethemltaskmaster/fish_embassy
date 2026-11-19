@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load rao_format %}
+{% block title %}Batches — Inventory — RAO Fish Embassy{% endblock %}
+{% block page_title %}Batches{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Physical lots — FEFO ordered by expiry</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'inventory:index' %}">← Back to Inventory</a></p>
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search SKU or reference…" class="form-control" style="max-width:280px;">
+    <select name="expiry" class="form-control" style="max-width:160px;">
+      <option value="">All expiries</option>
+      <option value="expired" {% if expiry_status == 'expired' %}selected{% endif %}>Expired</option>
+      <option value="expiring" {% if expiry_status == 'expiring' %}selected{% endif %}>Expiring soon</option>
+      <option value="fresh" {% if expiry_status == 'fresh' %}selected{% endif %}>Fresh</option>
+    </select>
+    <select name="loc" class="form-control" style="max-width:180px;">
+      <option value="">All locations</option>
+      {% for loc in locations %}
+        <option value="{{ loc.code }}" {% if location_code == loc.code %}selected{% endif %}>{{ loc.code }} — {{ loc.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Batch Code</th>
+          <th>SKU / Product</th>
+          <th>Supplier / Location</th>
+          <th>Expiry</th>
+          <th class="num">Remaining</th>
+          {% if show_costs %}<th class="num">Unit Cost</th>{% endif %}
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.batch_code }}</strong></td>
+            <td>
+              <strong>{{ row.sku_code }}</strong><br>
+              <span style="font-size:11px; color:var(--text-muted);">{{ row.product_name }}</span>
+            </td>
+            <td>
+              {{ row.supplier_name }}<br>
+              <span style="font-size:11px; color:var(--text-muted);">{{ row.location_code }}</span>
+            </td>
+            <td>{{ row.expiry_date|date_short }}</td>
+            <td class="num">{{ row.remaining_qty|qty }} / {{ row.received_qty|qty }}</td>
+            {% if show_costs %}<td class="num">{{ row.unit_cost|naira }}</td>{% endif %}
+            <td>
+              {% if row.status == 'expired' %}
+                <span class="badge badge--danger">Expired</span>
+              {% elif row.status == 'expiring' %}
+                <span class="badge badge--warning">Expiring</span>
+              {% else %}
+                <span class="badge badge--success">Fresh</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No batches" body="Batches appear once stock is received." %}
+  {% endif %}
+{% endblock %}

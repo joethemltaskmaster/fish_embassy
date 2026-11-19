@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Suppliers — Purchasing — RAO Fish Embassy{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Vendors we receive stock from</p>{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb"><a href="{% url 'purchasing:index' %}">← Back to Purchasing</a></p>
+
+  <form method="get" class="filter-bar">
+    <input type="search" name="q" value="{{ search }}" placeholder="Search by name…" class="form-control" style="max-width:320px;">
+    <button type="submit" class="btn btn--primary btn--sm">Filter</button>
+  </form>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; margin: 0;">Suppliers</h2>
+    {% if perms.purchasing.add_supplier %}
+      <a href="{% url 'purchasing:supplier_create' %}" class="btn btn--primary btn--sm">+ Add Supplier</a>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th class="num">Receipts</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><strong>{{ row.name }}</strong></td>
+            <td>{{ row.phone|default:"—" }}</td>
+            <td class="num">{{ row.receipt_count }}</td>
+            <td>
+              {% if row.is_active %}
+                <span class="badge badge--success">Active</span>
+              {% else %}
+                <span class="badge badge--neutral">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    {% include "partials/_empty_state.html" with title="No suppliers" body="Suppliers appear here once created via the admin." %}
+  {% endif %}
+{% endblock %}
