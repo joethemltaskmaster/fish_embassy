@@ -41,5 +41,4 @@ def chat_api(request):
             return JsonResponse(result, status=500)
 
         return JsonResponse(result)
-
     return JsonResponse({"error": "POST required."}, status=405)

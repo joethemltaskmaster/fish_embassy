@@ -1,12 +1,9 @@
 import json
 import os
 from datetime import date, timedelta
+from django.utils import timezone  # <-- Add this import
 from openai import OpenAI
 from .tools import TOOL_REGISTRY, TOOL_SCHEMAS
-from dotenv import load_dotenv
-
-# Load variables from the .env file
-load_dotenv(r"C:\Users\Joseph\Desktop\RAO_Fish_Embassy_app\.env")
 
 api_key = os.environ.get("NVIDIA_API_KEY")
 if not api_key:
@@ -17,13 +14,27 @@ client = OpenAI(
     api_key=api_key
 )
 
-# Use the currently active Meta Llama model on NVIDIA NIM
-MODEL = "nvidia/nemotron-3.5-bolt-e4b"
+MODEL = "meta/llama-3.3-70b-instruct"
 
-SYSTEM_PROMPT = """You are the RAO Fish Embassy Business Intelligence Assistant. 
+
+def get_system_prompt() -> str:
+    """Dynamically builds the prompt with the current real-time date."""
+    today = timezone.localdate()
+    day_of_week = today.strftime("%A")
+
+    return f"""You are the RAO Fish Embassy Business Intelligence Assistant. 
 You answer questions for the Super Admin.
 You have access to tools that query the database for verified metrics.
 ALWAYS use the provided tools to fetch data. Never guess or invent numbers.
+
+CRITICAL CONTEXT:
+- Today's date is {today.isoformat()} ({day_of_week}).
+- The business timezone is Africa/Lagos.
+- Use this exact date to calculate relative timeframes. For example:
+  - "last week" means the 7 days prior to today.
+  - "this month" means from the 1st of the current month to today.
+  - "yesterday" means {(today - timedelta(days=1)).isoformat()}.
+
 If a user asks for data without specifying dates, assume they mean the last 30 days.
 When you receive tool results, explain them clearly and highlight important trends."""
 
@@ -31,7 +42,8 @@ When you receive tool results, explain them clearly and highlight important tren
 def process_chat_message(user_message: str, chat_history: list) -> dict:
     """Handles the LLM interaction, tool calling, and final response generation."""
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    # 1. Inject the dynamic system prompt
+    messages = [{"role": "system", "content": get_system_prompt()}]
     messages.extend(chat_history)
     messages.append({"role": "user", "content": user_message})
 
@@ -46,7 +58,6 @@ def process_chat_message(user_message: str, chat_history: list) -> dict:
             max_tokens=1024
         )
     except Exception as e:
-        # Catch the 410 error here and return a readable message
         return {"error": f"AI Provider Error: {str(e)}"}
 
     response_message = response.choices[0].message

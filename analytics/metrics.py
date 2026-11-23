@@ -177,7 +177,6 @@ def get_expiring_batches(
     """Identify batches with stock expiring within the specified window."""
 
     today = timezone.localdate()
-
     threshold = today + timedelta(
         days=days_ahead
     )
@@ -238,7 +237,6 @@ def get_top_selling_products(
     limit: int = 5,
 ) -> list:
     """Rank SKUs by revenue generated during the specified period."""
-
     start_dt, end_dt = _get_datetime_bounds(
         start_date,
         end_date,

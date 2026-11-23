@@ -1,0 +1,116 @@
+# .github/workflows/python-ci.yml
+#
+# Phase 1 CI: automated pytest execution.
+#
+# Scope:
+#   - Runs on every push + PR to main/master.
+#   - Runs offline-safe tests only (no Postgres, no MCP, no LLM APIs).
+#   - Fails the job on any test failure, collection error, or install
+#     failure. No `|| true` anywhere.
+#
+# Excluded from CI (run separately with infrastructure):
+#   - tests/contract/         requires fake backend on :8765
+#   - tests/integration/      requires Postgres + canary seed
+#   - tests/prototype_ui/test_mcp_security_preserved.py
+#                             requires live MCP server
+#
+# Phase 2+ (coverage, linting, integration, CD) is deliberately not
+# introduced here.
+
+name: Python CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:   # manual trigger from the Actions UI
+
+permissions:
+  contents: read
+
+concurrency:
+  # If a PR is updated twice rapidly, kill the older run.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest (Python 3.11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      # Include both possible roots so imports work whether orchestrator/
+      # and mcp_server/ live at repo root or under ai_service/.
+      PYTHONPATH: >-
+        ${{ github.workspace }}:${{ github.workspace }}/ai_service
+      # Deterministic test-only JWT config. Never used in production.
+      MCP_JWT_SECRET: "ci-test-secret-not-for-production-use-only"
+      MCP_JWT_ALGORITHM: "HS256"
+      MCP_JWT_AUDIENCE: "axix-ai-service"
+      MCP_JWT_ISSUER: "axix-backend"
+      REQUIRE_TLS: "false"
+      # Intentionally NOT set:
+      #   SOURCE_DSN          — tests skip; that's the design
+      #   CONVERSATION_TEST_DSN — skips
+      #   NVIDIA_API_KEY      — skips
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-installed-snapshot.txt
+
+      - name: Show Python and pip versions
+        run: |
+          python --version
+          pip --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-installed-snapshot.txt
+          # Test-only deps not in the runtime snapshot:
+          pip install "pytest-asyncio>=0.23"
+
+      - name: Sanity — imports resolve
+        run: |
+          python -c "import sync_worker; print('sync_worker OK')"
+          python -c "import orchestrator; print('orchestrator OK')" \
+            || echo "::warning::orchestrator not importable as top-level module"
+          python -c "import mcp_server; print('mcp_server OK')" \
+            || echo "::warning::mcp_server not importable as top-level module"
+
+      - name: Collect tests (fails fast on import errors)
+        run: |
+          pytest --collect-only -q \
+            tests/unit \
+            tests/security \
+            tests/recovery \
+            tests/concurrency \
+            tests/conversation \
+            tests/llm \
+            tests/prototype_ui/test_config.py \
+            tests/prototype_ui/test_demo_auth.py \
+            tests/prototype_ui/test_runtime_parse.py \
+            tests/prototype_ui/test_as_of_date_forwarding.py
+
+      - name: Run CI-safe test suite
+        run: |
+          pytest -v --maxfail=5 \
+            tests/unit \
+            tests/security \
+            tests/recovery \
+            tests/concurrency \
+            tests/conversation \
+            tests/llm \
+            tests/prototype_ui/test_config.py \
+            tests/prototype_ui/test_demo_auth.py \
+            tests/prototype_ui/test_runtime_parse.py \
+            tests/prototype_ui/test_as_of_date_forwarding.py
