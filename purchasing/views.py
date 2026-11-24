@@ -7,6 +7,7 @@ from .forms import ReceiveStockForm
 from .models import Supplier
 from .selectors import receipts_for_list, suppliers_for_list
 from .services import receive_stock
+from .forms import ReceiveLineForm
 
 from .forms import SupplierForm
 
@@ -82,40 +83,42 @@ def receipts_list(request):
         "querystring": _query_wo_page(request),
     })
 
+
 @login_required
 @permission_required("purchasing.add_receipt", raise_exception=True)
 def receive(request):
     if request.method == "POST":
-        # Duplicate submission protection
-        token = request.POST.get('form_token')
-        if token and token == request.session.get('last_receipt_token'):
-            messages.warning(request, "This exact receipt was just submitted. Ignored to prevent duplication.")
-            return redirect("purchasing:receipts")
+        header_form = ReceiveStockForm(request.POST)
 
-        form = ReceiveStockForm(request.POST)
-        if form.is_valid():
+        # Parse dynamic lines
+        lines = []
+        error = False
+        i = 0
+        while f"line_{i}_sku" in request.POST:
+            line_form = ReceiveLineForm(request.POST, prefix=f"line_{i}")
+            if line_form.is_valid():
+                lines.append(line_form.cleaned_data)
+            else:
+                error = True
+                messages.error(request, f"Line {i + 1} has errors.")
+            i += 1
+
+        if header_form.is_valid() and not error and lines:
             try:
                 r = receive_stock(
-                    supplier=form.cleaned_data['supplier'],
-                    sku=form.cleaned_data['sku'],
-                    location=form.cleaned_data['location'],
-                    qty=form.cleaned_data['qty'],
-                    unit_cost=form.cleaned_data['unit_cost'],
-                    expiry_date=form.cleaned_data['expiry_date'],
-                    reference=form.cleaned_data['reference'],
-                    received_by=request.user,
+                    supplier=header_form.cleaned_data['supplier'],
+                    reference=header_form.cleaned_data['reference'],
+                    user=request.user,
+                    lines=lines
                 )
-                request.session['last_receipt_token'] = token
-                messages.success(request, f"Successfully recorded receipt #{r.pk}.")
+                messages.success(request, f"Successfully recorded receipt #{r.pk} with {len(lines)} lines.")
                 return redirect("purchasing:receipts")
             except Exception as e:
-                messages.error(request, f"Failed to record receipt: {str(e)}")
+                messages.error(request, f"Failed: {str(e)}")
     else:
-        form = ReceiveStockForm()
+        header_form = ReceiveStockForm()
 
     return render(request, "purchasing/receive.html", {
+        "header_form": header_form,
         "active_section": "purchasing",
-        "active_purchasing": "receive",
-        "form": form,
-        "form_token": str(uuid.uuid4()),
     })

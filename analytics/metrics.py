@@ -329,3 +329,53 @@ def get_operating_profit_summary(start_date: date, end_date: date) -> dict:
         "operating_expenses": expenses,
         "operating_profit": operating_profit
     }
+
+def get_expense_summary(start_date: date, end_date: date) -> dict:
+    """Calculate total operating expenses for a period."""
+    from costing.models import OperatingExpense
+    agg = OperatingExpense.objects.filter(date__gte=start_date, date__lte=end_date).aggregate(total=Sum('amount'))
+    return {"total_expenses": agg['total'] or Decimal('0.00')}
+
+def get_recent_expenses(limit: int = 5) -> list:
+    """Get the most recent operating expenses with full details."""
+    from costing.models import OperatingExpense
+    expenses = OperatingExpense.objects.select_related('recorded_by').order_by('-date', '-id')[:limit]
+    return [
+        {
+            "date": e.date.isoformat(),
+            "category": e.get_category_display(),
+            "amount": str(e.amount),
+            "description": e.description,
+            "recorded_by": e.recorded_by.username if e.recorded_by else "System"
+        }
+        for e in expenses
+    ]
+
+def get_recent_sales(limit: int = 5) -> list:
+    """Get the most recent sales transactions."""
+    from sales.models import Sale
+    sales = Sale.objects.select_related('customer', 'sold_by').order_by('-occurred_at')[:limit]
+    return [
+        {
+            "reference": s.reference or f"Sale #{s.pk}",
+            "date": s.occurred_at.isoformat(),
+            "customer": s.customer.name,
+            "total_price": str(s.total_price),
+            "sold_by": s.sold_by.username if s.sold_by else "System"
+        }
+        for s in sales
+    ]
+
+def get_recent_purchases(limit: int = 5) -> list:
+    """Get the most recent stock receipt (purchasing) transactions."""
+    from purchasing.models import Receipt
+    receipts = Receipt.objects.select_related('supplier', 'received_by').order_by('-received_at')[:limit]
+    return [
+        {
+            "reference": r.reference or f"Receipt #{r.pk}",
+            "date": r.received_at.isoformat(),
+            "supplier": r.supplier.name,
+            "received_by": r.received_by.username if r.received_by else "System"
+        }
+        for r in receipts
+    ]

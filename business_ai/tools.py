@@ -8,6 +8,10 @@ TOOL_REGISTRY = {
     "get_expiring_batches": metrics.get_expiring_batches,
     "get_low_stock_products": metrics.get_low_stock_products,
     "get_top_selling_products": metrics.get_top_selling_products,
+    "get_expense_summary": metrics.get_expense_summary,
+    "get_recent_expenses": metrics.get_recent_expenses,
+    "get_recent_sales": metrics.get_recent_sales,
+    "get_recent_purchases": metrics.get_recent_purchases,
 }
 
 # These are the JSON schemas we send to NVIDIA to tell it what tools are available.
@@ -69,6 +73,63 @@ TOOL_SCHEMAS = [
             "name": "get_low_stock_products",
             "description": "Get a list of SKUs where the current balance is at or below the reorder level.",
             "parameters": {"type": "object", "properties": {}}
+        }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "get_expense_summary",
+            "description": "Calculate total operating expenses for a specific date range.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "format": "date"},
+                    "end_date": {"type": "string", "format": "date"}
+                },
+                "required": ["start_date", "end_date"]
+            }
+        }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recent_expenses",
+            "description": "Get the most recent operating expenses with descriptions, categories, and who recorded them.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Number of records to return (default 5)."}
+                }
+            }
+        }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recent_sales",
+            "description": "Get the most recent sales transactions with customer names and totals.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Number of records to return (default 5)."}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recent_purchases",
+            "description": "Get the most recent stock receipt (purchasing) transactions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Number of records to return (default 5)."}
+                }
+            }
         }
     },
     {

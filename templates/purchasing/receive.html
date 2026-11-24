@@ -1,32 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Receive Stock — Purchasing — RAO Fish Embassy{% endblock %}
+{% block title %}Receive Stock — RAO Fish Embassy{% endblock %}
 {% block page_title %}Record a Delivery{% endblock %}
-{% block page_subtitle %}<p class="page-subtitle">Receive new stock into inventory</p>{% endblock %}
 
 {% block content %}
   <p class="breadcrumb"><a href="{% url 'purchasing:index' %}">← Back to Purchasing</a></p>
 
   <div class="form-card">
-    <form method="post">
+    <form method="post" id="receive-form">
       {% csrf_token %}
-      <input type="hidden" name="form_token" value="{{ form_token }}">
 
-      {% if form.non_field_errors %}
-        <div class="message message--error">{{ form.non_field_errors.0 }}</div>
-      {% endif %}
+      <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px;">
+        {% for field in header_form %}
+          <div class="form-group">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+          </div>
+        {% endfor %}
+      </div>
 
-      {% for field in form %}
-        <div class="form-group">
-          <label for = "{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
-          {% if field.errors %}
-            <p class="form-error">{{ field.errors.0 }}</p>
-          {% endif %}
+      <h3 style="font-size: 16px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Items Received</h3>
+
+      <div id="form-lines-container">
+        <!-- Row 0 (Initial) -->
+        <div class="dynamic-row" id="row-0">
+          <div class="form-group"><label class="form-label">SKU</label><select name="line_0_sku" class="form-control" required><option value="">---------</option>{% for sku in view.get_form_class.0 %}{% endfor %}{% for s in header_form.fields %}{% endfor %} <!-- JS will render this, see note below --> </select></div>
         </div>
-      {% endfor %}
+      </div>
 
-      <div style="margin-top: 24px; display: flex; gap: 12px;">
+      <!-- Template for JS Clone -->
+      <template id="line-template">
+        <div class="dynamic-row">
+          <button class="btn-remove-row" title="Remove Line">✕</button>
+          <div class="form-group"><label class="form-label">SKU</label><select name="line___prefix___sku" class="form-control" required><option value="">---------</option>{% for s in form_lines_choices %}<option value="{{ s.id }}">{{ s.code }}</option>{% endfor %}</select></div>
+          <div class="form-group"><label class="form-label">Location</label><select name="line___prefix___location" class="form-control" required><option value="">---------</option>{% for l in location_choices %}<option value="{{ l.id }}">{{ l.code }}</option>{% endfor %}</select></div>
+          <div class="form-group"><label class="form-label">Qty</label><input type="number" step="0.001" name="line___prefix___qty" class="form-control" required></div>
+          <div class="form-group"><label class="form-label">Cost (₦)</label><input type="number" step="0.01" name="line___prefix___unit_cost" class="form-control" required></div>
+          <div class="form-group"><label class="form-label">Expiry</label><input type="date" name="line___prefix___expiry_date" class="form-control" required></div>
+        </div>
+      </template>
+
+      <button id="add-line-btn" class="btn btn--ghost" style="width: 100%; margin-bottom: 24px;">+ Add Another Line</button>
+
+      <div style="display: flex; gap: 12px;">
         <button type="submit" class="btn btn--primary">Record Delivery</button>
         <a href="{% url 'purchasing:index' %}" class="btn btn--ghost">Cancel</a>
       </div>

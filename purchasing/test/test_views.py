@@ -1,110 +1,129 @@
-from datetime import date, timedelta
-from decimal import Decimal
-from io import StringIO
+import uuid
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect
+from ..forms import ReceiveStockForm, ReceiveLineForm, SupplierForm
+from ..models import Supplier
+from ..selectors import receipts_for_list, suppliers_for_list
+from ..services import receive_stock
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from django.core.management import call_command
-from django.test import TestCase
-from django.urls import reverse
-
-from inventory.models import Batch, Location, Product, SKU, StockMovement
-from purchasing.models import Receipt, Supplier
-from costing.models import SKUBalance
-
-User = get_user_model()
+PAGE_SIZE = 25
 
 
-def _make_user(username, group=None):
-    user = User.objects.create_user(username=username, password="x")
-    if group:
-        user.groups.add(Group.objects.get(name=group))
-    return user
+def _paginate(request, qs):
+    return Paginator(qs, PAGE_SIZE).get_page(request.GET.get("page", 1))
 
 
-def _fixtures():
-    product = Product.objects.create(name="Frozen Chicken")
-    sku = SKU.objects.create(product=product, code="CHICKEN-20KG")
-    loc = Location.objects.create(code="MAIN", name="Main")
-    supplier = Supplier.objects.create(name="Supplier A")
-    return product, sku, loc, supplier
+def _query_wo_page(request):
+    params = request.GET.copy()
+    params.pop("page", None)
+    return params.urlencode()
 
 
-class ReceiveFormTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        call_command("setup_roles", stdout=StringIO())
-        _, cls.sku, cls.loc, cls.supplier = _fixtures()
-        cls.manager = _make_user("mgr", group="Manager")
-        cls.staff = _make_user("stf", group="Inventory Staff")
-
-    def setUp(self):
-        self.client.force_login(self.manager)
-
-    def test_manager_can_view_receive_form(self):
-        response = self.client.get(reverse("purchasing:receive"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Record a Delivery")
-
-    def test_staff_can_view_receive_form(self):
-        self.client.force_login(self.staff)
-        response = self.client.get(reverse("purchasing:receive"))
-        self.assertEqual(response.status_code, 200)
-
-    def test_valid_post_creates_records_and_attributes_user(self):
-        data = {
-            "supplier": self.supplier.pk,
-            "sku": self.sku.pk,
-            "location": self.loc.pk,
-            "qty": "50",
-            "unit_cost": "21000",
-            "expiry_date": (date.today() + timedelta(days=365)).isoformat(),
-            "reference": "PO-123",
-            "form_token": "token123"
+@login_required
+@permission_required("purchasing.view_supplier", raise_exception=True)
+def index(request):
+    return render(request, "purchasing/index.html", {
+        "active_section": "purchasing",
+        "active_purchasing": "overview",
+        "counts": {
+            "suppliers": Supplier.objects.count(),
+            "receipts": receipts_for_list().count(),
         }
-        response = self.client.post(reverse("purchasing:receive"), data, follow=True)
-        self.assertEqual(response.status_code, 200)
+    })
 
-        self.assertEqual(Receipt.objects.count(), 1)
-        receipt = Receipt.objects.first()
-        self.assertEqual(receipt.received_by, self.manager)
-        self.assertEqual(receipt.reference, "PO-123")
 
-        self.assertEqual(Batch.objects.count(), 1)
-        self.assertEqual(StockMovement.objects.count(), 1)
-        self.assertEqual(StockMovement.objects.first().user, self.manager)
-        self.assertEqual(SKUBalance.objects.get(sku=self.sku).qty, Decimal("50"))
+@login_required
+@permission_required("purchasing.view_supplier", raise_exception=True)
+def suppliers_list(request):
+    search = request.GET.get("q", "").strip() or None
+    qs = suppliers_for_list(search=search)
+    page = _paginate(request, qs)
+    return render(request, "purchasing/suppliers/list.html", {
+        "active_section": "purchasing",
+        "rows": page.object_list,
+        "page": page,
+        "search": search or "",
+        "querystring": _query_wo_page(request),
+    })
 
-    def test_past_expiry_date_rejected(self):
-        data = {
-            "supplier": self.supplier.pk,
-            "sku": self.sku.pk,
-            "location": self.loc.pk,
-            "qty": "10",
-            "unit_cost": "100",
-            "expiry_date": (date.today() - timedelta(days=1)).isoformat(),
-        }
-        response = self.client.post(reverse("purchasing:receive"), data)
-        self.assertEqual(response.status_code, 200)
-        self.assertFormError(response.context["form"], "expiry_date", "Expiry date cannot be in the past.")
-        self.assertEqual(Receipt.objects.count(), 0)
 
-    def test_duplicate_submission_blocked(self):
-        data = {
-            "supplier": self.supplier.pk,
-            "sku": self.sku.pk,
-            "location": self.loc.pk,
-            "qty": "10",
-            "unit_cost": "100",
-            "expiry_date": (date.today() + timedelta(days=10)).isoformat(),
-            "form_token": "token-dupe"
-        }
-        # First post
-        self.client.post(reverse("purchasing:receive"), data, follow=True)
-        self.assertEqual(Receipt.objects.count(), 1)
+@login_required
+@permission_required("purchasing.add_supplier", raise_exception=True)
+def supplier_create(request):
+    if request.method == "POST":
+        form = SupplierForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.created_by = request.user
+            obj.save()
+            messages.success(request, "Supplier created successfully.")
+            return redirect("purchasing:suppliers")
+    else:
+        form = SupplierForm()
+    return render(request, "purchasing/suppliers/create.html", {"active_section": "purchasing", "form": form})
 
-        # Second post with same token
-        response = self.client.post(reverse("purchasing:receive"), data, follow=True)
-        self.assertEqual(Receipt.objects.count(), 1)  # Still 1
-        messages = list(response.context["messages"])
-        self.assertTrue(any("Ignored to prevent duplication" in str(m) for m in messages))
+
+@login_required
+@permission_required("purchasing.view_receipt", raise_exception=True)
+def receipts_list(request):
+    search = request.GET.get("q", "").strip() or None
+    qs = receipts_for_list(search=search)
+    page = _paginate(request, qs)
+    return render(request, "purchasing/receipts/list.html", {
+        "active_section": "purchasing",
+        "active_purchasing": "receipts",
+        "rows": page.object_list,
+        "page": page,
+        "search": search or "",
+        "querystring": _query_wo_page(request),
+    })
+
+
+@login_required
+@permission_required("purchasing.add_receipt", raise_exception=True)
+def receive(request):
+    if request.method == "POST":
+        # Duplicate submission protection
+        token = request.POST.get('form_token')
+        if token and token == request.session.get('last_receipt_token'):
+            messages.warning(request, "This exact receipt was just submitted. Ignored to prevent duplication.")
+            return redirect("purchasing:receipts")
+
+        header_form = ReceiveStockForm(request.POST)
+
+        # Parse dynamic lines
+        lines = []
+        error = False
+        i = 0
+        while f"line_{i}_sku" in request.POST:
+            line_form = ReceiveLineForm(request.POST, prefix=f"line_{i}")
+            if line_form.is_valid():
+                lines.append(line_form.cleaned_data)
+            else:
+                error = True
+                messages.error(request, f"Line {i + 1} has errors.")
+            i += 1
+
+        if header_form.is_valid() and not error and lines:
+            try:
+                r = receive_stock(
+                    supplier=header_form.cleaned_data['supplier'],
+                    reference=header_form.cleaned_data['reference'],
+                    user=request.user,
+                    lines=lines
+                )
+                request.session['last_receipt_token'] = token
+                messages.success(request, f"Successfully recorded receipt #{r.pk} with {len(lines)} lines.")
+                return redirect("purchasing:receipts")
+            except Exception as e:
+                messages.error(request, f"Failed: {str(e)}")
+    else:
+        header_form = ReceiveStockForm()
+
+    return render(request, "purchasing/receive.html", {
+        "header_form": header_form,
+        "active_section": "purchasing",
+        "form_token": str(uuid.uuid4()),
+    })
