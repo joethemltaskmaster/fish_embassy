@@ -742,3 +742,28 @@ code {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* Desktop: same two columns as before */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Mobile only */
+@media (max-width: 768px) {
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-grid > * { min-width: 0; }
+
+  .table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll .table { min-width: max-content; }
+
+  .table-scroll::-webkit-scrollbar { height: 8px; }
+  .table-scroll::-webkit-scrollbar-track { background: #e5e7eb; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #9aa3b2; border-radius: 4px; }
+}
