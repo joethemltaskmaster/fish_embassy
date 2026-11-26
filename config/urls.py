@@ -1,9 +1,12 @@
 from django.contrib import admin
 from django.urls import include, path
+
 from . import auth_views, views as config_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+
+    # Auth
     path("accounts/login/", auth_views.ProjectLoginView.as_view(), name="login"),
     path("accounts/logout/", auth_views.ProjectLogoutView.as_view(), name="logout"),
 
@@ -12,6 +15,7 @@ urlpatterns = [
     path("inventory/", include("inventory.urls")),
     path("purchasing/", include("purchasing.urls")),
     path("sales/", include("sales.urls")),
+    path("costing/", include("costing.urls")),  # For Expenses
     path("reports/", config_views.reports_index, name="reports_index"),
     path("reports/valuation/", config_views.report_valuation, name="reports_valuation"),
     path("reports/sales/", config_views.report_sales, name="reports_sales"),
@@ -21,9 +25,7 @@ urlpatterns = [
     path("administration/create/", config_views.staff_create, name="staff_create"),
     path("administration/toggle/<int:user_id>/", config_views.staff_toggle, name="staff_toggle"),
 
-    # NEW: Business Intelligence
+    # Business Intelligence & AI (Included only ONCE)
     path("business-intelligence/", include("analytics.urls")),
-    path("costing/", include("costing.urls")),
-    path("business-intelligence/", include("analytics.urls")),
-    path("business-intelligence/chat/", include("business_ai.urls")),  # <-- NEW
+    path("business-intelligence/chat/", include("business_ai.urls")),
 ]

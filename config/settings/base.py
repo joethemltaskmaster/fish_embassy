@@ -1,19 +1,24 @@
 from pathlib import Path
 import os
-
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
-RAO_EXPIRY_WARNING_DAYS = 30   # batches within this window get "expiring" status
 
+# ─── Core Settings ──────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-change-me")
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get(
-    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1"
-).split(",") if h.strip()]
+DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
 
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+
+# Allow Render's internal health checks and subdomains
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(",") if o.strip()]
+if "onrender.com" in os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}")
+
+# ─── Applications ───────────────────────────────────────────
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -21,19 +26,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # project apps
     "inventory",
     "purchasing",
     "sales",
-    "analytics",
     "costing",
     "audit",
-    "dashboard",
+    "analytics",
     "business_ai",
 ]
 
+# ─── Middleware (WhiteNoise added) ──────────────────────────
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware", # <-- Added for Render Static Files
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -61,16 +66,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "rao_db"),
-        "USER": os.environ.get("POSTGRES_USER", "rao"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "YOUR_STRONG_PASSWORD"),
-        "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+# ─── Database ───────────────────────────────────────────────
+# Use Render's DATABASE_URL if available, otherwise fallback to local
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "rao_db"),
+            "USER": os.environ.get("POSTGRES_USER", "rao"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "YOUR_STRONG_PASSWORD"),
+            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -79,9 +94,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# ─────────────────────────────────────────────────────────────
-# Authentication
-# ─────────────────────────────────────────────────────────────
+# ─── Authentication & Routing ───────────────────────────────
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard_index"
 LOGOUT_REDIRECT_URL = "login"
@@ -91,23 +104,40 @@ TIME_ZONE = "Africa/Lagos"
 USE_I18N = True
 USE_TZ = True
 
+# ─── Static Files (WhiteNoise configuration) ────────────────
 STATIC_URL = "/static/"
-
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+# Whitenoise compression for production
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ─────────────────────────────────────────────────────────────
-# Rule register — every business default lives here.
-# A changed answer is a switch, not a rewrite.
-# ─────────────────────────────────────────────────────────────
+# ─── Rule Register ──────────────────────────────────────────
+RAO_EXPIRY_WARNING_DAYS = 30
 RAO_BASE_UNIT = "carton"
 RAO_ALLOW_PARTIAL_CARTONS = False
-RAO_COSTING_METHOD = "average"       # "batch" is a future option
+RAO_COSTING_METHOD = "average"
 RAO_CURRENCY = "NGN"
 RAO_CURRENCY_SYMBOL = "₦"
 RAO_DEFAULT_LOCATION_CODE = "MAIN"
+
+# ─── Production Security (Render) ───────────────────────────
+if not DEBUG:
+    # Render provides SSL at the proxy level
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Force all traffic to HTTPS
+    SECURE_SSL_REDIRECT = True
+
+    # Secure Cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # HTTP Strict Transport Security (HSTS)
+    # Tells browsers to always use HTTPS for 1 year (31536000 seconds)
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
