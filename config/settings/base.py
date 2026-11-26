@@ -11,12 +11,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-change-me")
 DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
 
+# ─── Host & Security Settings ───────────────────────────────
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
-# Allow Render's internal health checks and subdomains
+# Render automatically provides the external hostname via this env var.
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if render_hostname:
+    # Add the exact Render domain (e.g. rao-app-gorm.onrender.com)
+    ALLOWED_HOSTS.append(render_hostname)
+    # Also add the wildcard for any internal Render health checks
+    ALLOWED_HOSTS.append(".onrender.com")
+
+# Ensure CSRF works over HTTPS on Render
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(",") if o.strip()]
-if "onrender.com" in os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""):
-    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}")
+if render_hostname:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{render_hostname}")
+
+# Tell Django that Render's proxy terminates SSL.
+# Without this, Django thinks the request is insecure and may redirect you in a loop.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ─── Applications ───────────────────────────────────────────
 INSTALLED_APPS = [
