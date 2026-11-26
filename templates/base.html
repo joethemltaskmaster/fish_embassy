@@ -1,22 +1,18 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}RAO Fish Embassy{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-
-    <header class="page-header">
-      ...
-    </header>
-
 <body>
-  <div class="layout">
-    {% include "partials/_sidebar.html" %}
+  <!-- Sidebar and Overlay are fixed elements, placed outside the flex flow -->
+  {% include "partials/_sidebar.html" %}
+  <div class="sidebar-overlay"></div>
 
+  <div class="layout">
     <div class="layout__main">
       {% include "partials/_topbar.html" %}
       {% include "partials/_messages.html" %}
@@ -37,6 +33,7 @@
     </div>
   </div>
 
+  <script src="{% static 'js/app.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
