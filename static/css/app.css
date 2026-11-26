@@ -751,7 +751,7 @@ code {
 }
 
 /* Mobile only */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
   .dashboard-grid > * { min-width: 0; }
 
