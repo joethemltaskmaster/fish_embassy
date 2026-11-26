@@ -90,6 +90,7 @@ html, body {
   color: var(--text);
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden; /* <-- ADD THIS: Stops the whole page from scrolling sideways */
 }
 
 a { color: var(--brand); text-decoration: none; }
@@ -108,13 +109,14 @@ code {
 .layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden; /* <-- ADD THIS */
 }
-
 .layout__main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-width: 0; /* <-- CRITICAL: Prevents flexbox from blowing out the width */
   width: 100%;
   transition: margin-left 0.3s ease;
 }
@@ -280,6 +282,7 @@ code {
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0; /* <-- ADD THIS: Ensures content doesn't force the page wider */
 }
 
 .page-header {
@@ -412,6 +415,16 @@ code {
 .badge--info    { background: var(--info-bg);    color: var(--info); }
 .badge--neutral { background: #f2f4f7;           color: var(--text-muted); }
 
+/* --- Table Scrolling --- */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: block;
+  /* Added padding to prevent the scrollbar from hiding the content */
+  padding-bottom: 8px;
+}
+
 /* ─── tables ─────────────────────────────────────────────── */
 
 .table-responsive {
@@ -428,7 +441,7 @@ code {
   border-radius: var(--radius);
   overflow: hidden;
   font-size: 13px;
-  min-width: 600px; /* Forces scroll on mobile */
+  min-width: 600px; /* Forces the table to be wider than mobile screens, triggering the scroll inside .table-responsive */
 }
 
 .table th {

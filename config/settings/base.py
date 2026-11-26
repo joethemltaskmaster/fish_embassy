@@ -100,6 +100,7 @@ else:
             "PORT": os.environ.get("POSTGRES_PORT", "5432"),
         }
     }
+"YOUR_STRONG_PASSWORD"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

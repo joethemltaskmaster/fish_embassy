@@ -13,28 +13,31 @@
   </form>
 
   {% if rows %}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Supplier</th>
-          <th>Reference</th>
-          <th>SKU Lines</th>
-          <th>Received By</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for receipt in rows %}
+    <!-- THE WRAPPER -->
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
           <tr>
-            <td>{{ receipt.received_at|datetime_short }}</td>
-            <td><strong>{{ receipt.supplier.name }}</strong></td>
-            <td>{{ receipt.reference|default:"—" }}</td>
-            <td class="num">{{ receipt.lines.count }}</td>
-            <td>{{ receipt.received_by.get_username|default:"System" }}</td>
+            <th>Date</th>
+            <th>Supplier</th>
+            <th>Reference</th>
+            <th>SKU Lines</th>
+            <th>Received By</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for receipt in rows %}
+            <tr>
+              <td>{{ receipt.received_at|datetime_short }}</td>
+              <td><strong>{{ receipt.supplier.name }}</strong></td>
+              <td>{{ receipt.reference|default:"—" }}</td>
+              <td class="num">{{ receipt.lines.count }}</td>
+              <td>{{ receipt.received_by.get_username|default:"System" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% include "partials/_pagination.html" %}
   {% else %}
     {% include "partials/_empty_state.html" with title="No receipts" body="Record a delivery to see it here." %}
