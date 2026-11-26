@@ -1,5 +1,17 @@
 /* RAO Fish Embassy — application shell */
 
+/* =========================================
+   GLOBAL HEADER OVERFLOW FIX
+========================================= */
+
+.topbar,
+.page-header {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
 /* ─── login page ─────────────────────────────────────────── */
 
 .auth-page {
@@ -90,7 +102,6 @@ html, body {
   color: var(--text);
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden; /* <-- ADD THIS: Stops the whole page from scrolling sideways */
 }
 
 a { color: var(--brand); text-decoration: none; }
@@ -110,13 +121,13 @@ code {
   display: flex;
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden; /* <-- ADD THIS */
 }
+
 .layout__main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* <-- CRITICAL: Prevents flexbox from blowing out the width */
+  min-width: 0;
   width: 100%;
   transition: margin-left 0.3s ease;
 }
@@ -151,6 +162,7 @@ code {
   opacity: 0;
   transition: opacity 0.3s;
 }
+
 .layout--sidebar-open .sidebar-overlay {
   display: block;
   opacity: 1;
@@ -236,17 +248,26 @@ code {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: var(--topbar-h);
-  padding: 0 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: var(--topbar-h);
+  height: auto;
+  padding: 10px 16px;
+}
+
+/* Keep every direct header child inside the available flex space. */
+.topbar > * {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar__menu-btn {
   display: block;
+  flex: 0 0 var(--touch-target);
   background: none;
   border: none;
   font-size: 24px;
@@ -260,14 +281,44 @@ code {
 .topbar__right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-width: 0;
+  max-width: 100%;
   margin-left: auto;
+}
+
+.topbar__right > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar__user {
   display: none;
+  min-width: 0;
+  max-width: 100%;
   font-size: 13px;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.topbar form,
+.page-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.topbar form > *,
+.page-actions > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar__user strong { color: var(--text); }
@@ -281,33 +332,59 @@ code {
   padding: 16px;
   max-width: 1400px;
   width: 100%;
+  min-width: 0;
   margin: 0 auto;
 }
 
 .page-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-bottom: 20px;
+}
+
+.page-header > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-header > div {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .page-subtitle {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 
 .page-actions {
   display: flex;
+  align-items: center;
+  flex: 0 1 auto;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-actions > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ─── messages ───────────────────────────────────────────── */
@@ -649,6 +726,7 @@ code {
 }
 
 /* ─── dynamic rows (multi-line receiving/selling) ────────── */
+
 .dynamic-row {
   display: grid;
   grid-template-columns: 1fr;
@@ -676,6 +754,7 @@ code {
 }
 
 /* ─── chat interface (AI) ────────────────────────────────── */
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -684,6 +763,7 @@ code {
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
 #chat-history {
   flex: 1;
   overflow-y: auto;
@@ -692,12 +772,50 @@ code {
   flex-direction: column;
   gap: 12px;
 }
+
 .chat-input-area {
   padding: 12px;
   border-top: 1px solid var(--border);
   background: #f9fafb;
   display: flex;
   gap: 8px;
+}
+
+/* ─── responsive header layout ────────────────────────────── */
+
+@media (max-width: 767px) {
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .topbar__right {
+    flex: 1 1 180px;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .page-header > * {
+    width: 100%;
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .topbar .btn,
+  .page-header .btn {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* ─── responsive desktop breakpoints ─────────────────────── */
