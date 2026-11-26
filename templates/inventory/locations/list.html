@@ -18,6 +18,7 @@
   </div>
 
   {% if rows %}
+<div class="table-responsive">
     <table class="table">
       <thead>
         <tr>
@@ -44,6 +45,7 @@
         {% endfor %}
       </tbody>
     </table>
+</div>
     {% include "partials/_pagination.html" %}
   {% else %}
     {% include "partials/_empty_state.html" with title="No locations" %}

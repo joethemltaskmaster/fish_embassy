@@ -4,6 +4,7 @@
 {% block page_title %}Expiry Schedule{% endblock %}
 {% block content %}
   <p class="breadcrumb"><a href="{% url 'reports_index' %}">← Back to Reports</a></p>
+<div class="table-responsive">
   <table class="table">
     <thead>
       <tr>
@@ -26,4 +27,5 @@
       {% endfor %}
     </tbody>
   </table>
+</div>
 {% endblock %}
