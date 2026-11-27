@@ -62,10 +62,10 @@
     </a>
     {% endif %}
 
-          <!-- Business Intelligence: Restricted to Superusers -->
+    <!-- Business Intelligence: Restricted to Superusers -->
     {% if user.is_superuser %}
     <a href="{% url 'analytics:dashboard' %}"
-       class="sidebar__link {% if active_section == 'business_intelligence' %}is-active{% endif %}">
+       class="sidebar__link {% if active_section == 'business_intelligence' and request.resolver_match.namespace != 'business_ai' %}is-active{% endif %}">
       <span class="sidebar__icon" aria-hidden="true">🧠</span>
       <span>Business Intel</span>
     </a>

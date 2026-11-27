@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================
@@ -10,8 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tables.forEach((table) => {
 
-        // Avoid wrapping a table that is already responsive.
-        if (!table.parentElement?.classList.contains('table-responsive')) {
+        // Avoid wrapping a table that already has a scroll container.
+        if (!table.parentElement?.matches('.table-responsive, .table-scroll')) {
 
             const wrapper = document.createElement('div');
             wrapper.className = 'table-responsive';
@@ -129,19 +128,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     }
 
-    // Close the sidebar when the overlay is clicked.
-    if (overlay && layout) {
+    // Close the sidebar and keep the button state in sync.
+    const closeSidebar = () => {
 
-        overlay.addEventListener('click', () => {
+        layout?.classList.remove('layout--sidebar-open');
+        menuBtn?.setAttribute('aria-expanded', 'false');
 
-            layout.classList.remove('layout--sidebar-open');
+    };
 
-            if (menuBtn) {
-                menuBtn.setAttribute('aria-expanded', 'false');
-            }
+    // Close when anywhere outside the sidebar (the overlay) is tapped.
+    overlay?.addEventListener('click', closeSidebar);
 
-        });
+    // Close with the Esc key.
+    document.addEventListener('keydown', (event) => {
 
-    }
+        if (event.key === 'Escape') {
+            closeSidebar();
+        }
+
+    });
 
 });

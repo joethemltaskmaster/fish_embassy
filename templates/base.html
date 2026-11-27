@@ -12,6 +12,7 @@
 <body>
   <div class="layout">
     {% include "partials/_sidebar.html" %}
+    <div class="sidebar-overlay"></div>
 
     <div class="layout__main">
       {% include "partials/_topbar.html" %}
@@ -31,6 +32,8 @@
       </main>
     </div>
   </div>
+  <script src="{% static 'js/app.js' %}"></script>
   {% block extra_js %}{% endblock %}
+
 </body>
 </html>
