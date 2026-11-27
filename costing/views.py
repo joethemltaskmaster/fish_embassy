@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from .models import OperatingExpense
 from .forms import OperatingExpenseForm
+from audit.services import record
 
 
 @login_required
@@ -28,6 +29,17 @@ def expense_create(request):
             obj = form.save(commit=False)
             obj.recorded_by = request.user
             obj.save()
+
+            # Add Audit Trail
+            record(
+                action="record_expense",
+                target=obj.get_category_display(),
+                payload={"amount": str(obj.amount), "description": obj.description},
+                user=request.user,
+                service="costing",
+                component="expense_service"
+            )
+
             messages.success(request, "Expense recorded successfully.")
             return redirect("expenses_list")
     else:

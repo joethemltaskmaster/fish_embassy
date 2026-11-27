@@ -90,7 +90,9 @@ def receive_stock(
         payload={
             "receipt_id": receipt.pk,
             "line_count": len(lines),
-            "user_id": actor.pk if actor else None,
         },
+        user=actor,                        # <-- Added
+        service="purchasing",              # <-- Added
+        component="receipt_service"        # <-- Added
     )
     return receipt

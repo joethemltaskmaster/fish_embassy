@@ -345,8 +345,16 @@ def sell_stock(
         payload={
             "sale_id": sale.pk,
             "total": str(sale.total_price),
-            "user_id": actor.pk if actor else None,
+            # Iterate over all lines in the sale, and all allocations per line
+            "allocations": [
+                {"batch_id": a.batch_id, "qty": str(a.qty)}
+                for l in sale.lines.all()
+                for a in l.allocations.all()
+            ],
         },
+        user=actor,
+        service="sales",
+        component="sale_service"
     )
 
     return sale
